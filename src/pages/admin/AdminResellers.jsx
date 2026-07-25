@@ -41,7 +41,7 @@ export default function AdminResellers() {
 
   const fetchResellers = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('resellers')
       .select('*')
       .order('name');
