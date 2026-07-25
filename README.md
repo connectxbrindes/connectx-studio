@@ -1,16 +1,36 @@
-# React + Vite
+# ConnectX Studio
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Este é o repositório do frontend do ConnectX Studio.
 
-Currently, two official plugins are available:
+## Guia de Deploy e Publicação
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Abaixo estão os passos necessários para colocar o projeto no ar, conectando o repositório ao Vercel e configurando o domínio.
 
-## React Compiler
+### A) GitHub — criar o repositório e subir
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Em `github.com` → **New repository**. Nome, ex.: `connectx-studio`. Deixe vazio (sem README, sem `.gitignore` — o código já tem tudo). Clique em **Create repository**.
+2. No seu terminal, dentro da pasta do projeto, rode (trocando `SEU-USUARIO` pelo seu usuário do GitHub):
 
-## Expanding the Oxlint configuration
+```bash
+git remote add origin https://github.com/SEU-USUARIO/connectx-studio.git
+git push -u origin main
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+*(Vai abrir uma janela pra você logar no GitHub — é normal, é a autorização).*
+
+### B) Vercel — conectar e publicar
+
+1. Em `vercel.com` → **Add New** → **Project** → conecte sua conta do GitHub → importe o repositório `connectx-studio`. Ele detecta o Vite sozinho (build `npm run build`, saída `dist` — não precisa mexer).
+2. **IMPORTANTE**: Antes de clicar em Deploy, abra **Environment Variables** e adicione as duas (pegue os valores no Supabase em Project Settings → API):
+   - `VITE_SUPABASE_URL` → a URL do projeto
+   - `VITE_SUPABASE_ANON_KEY` → a chave anon/public (a anon, não a service_role)
+3. Clique em **Deploy**. Em ~1 min ele te dá um endereço de teste tipo `connectx-studio.vercel.app` — abra e confira que o Studio e o `/admin` carregam.
+
+### C) Domínio — Configuração Final
+
+1. No projeto na Vercel → **Settings** → **Domains** → adicione `connectxbrindes.com.br` (e, se quiser, `www.connectxbrindes.com.br`).
+2. A Vercel vai mostrar os registros DNS que precisam ser criados (normalmente um registro `A` pro domínio raiz apontando pra um IP da Vercel + um `CNAME`).
+
+> **Segurança:** Assim que terminarmos o DNS, gere uma nova chave da Hostinger (se você compartilhou a anterior no chat, ela ficou registrada no histórico). E, quando for repassar tokens do GitHub/Vercel, evite colar diretamente em chats se não for estritamente necessário.
+
+> **Supabase:** Depois do domínio no ar, lembre-se de atualizar o Site URL no Supabase (**Authentication** → **URL Configuration**) para `https://connectxbrindes.com.br`, para a parte de login/senha ficar 100% alinhada ao domínio novo.
