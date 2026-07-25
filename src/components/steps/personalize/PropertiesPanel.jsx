@@ -1,0 +1,138 @@
+import { useStore } from '../../../store/useStore';
+
+const FONT_SIZES = [14, 16, 20, 24, 32, 40, 48];
+const FONT_FAMILIES = [
+  { value: "'Amsi Pro Cond', sans-serif", label: 'Amsi Pro Cond' },
+  { value: "'Bakerie Smooth', sans-serif", label: 'Bakerie Smooth' },
+  { value: "'Weather Sunday', cursive", label: 'Weather Sunday' },
+];
+const ALIGNMENTS = [
+  { value: 'left', label: 'Esq.' },
+  { value: 'center', label: 'Centro' },
+  { value: 'right', label: 'Dir.' },
+];
+
+export default function PropertiesPanel() {
+  const elements = useStore((s) => s.elements);
+  const selectedElementId = useStore((s) => s.selectedElementId);
+  const updateElement = useStore((s) => s.updateElement);
+  const removeElement = useStore((s) => s.removeElement);
+
+  const element = elements.find((el) => el.id === selectedElementId);
+
+  if (!element) {
+    return (
+      <p className="text-sm text-text-secondary">
+        Adicione texto ou imagem e selecione um elemento para editar suas propriedades.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
+          {element.type === 'text' ? 'Texto' : 'Imagem'}
+        </h3>
+        <button
+          type="button"
+          onClick={() => removeElement(element.id)}
+          className="text-sm font-medium text-accent hover:underline"
+        >
+          Remover
+        </button>
+      </div>
+
+      {element.type === 'text' && (
+        <>
+          <label className="flex flex-col gap-1 text-sm">
+            Conteúdo
+            <textarea
+              value={element.content}
+              onChange={(e) => updateElement(element.id, { content: e.target.value })}
+              rows={2}
+              className="resize-none rounded-lg border border-border px-3 py-2"
+            />
+          </label>
+
+          <div className="flex flex-col gap-1 text-sm">
+            Fonte
+            <div className="grid grid-cols-3 gap-2">
+              {FONT_FAMILIES.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  title={label}
+                  aria-label={label}
+                  onClick={() => updateElement(element.id, { fontFamily: value })}
+                  aria-pressed={element.fontFamily === value}
+                  style={{ fontFamily: value }}
+                  className={`rounded-lg border py-2 text-lg transition-colors ${
+                    element.fontFamily === value ? 'border-text-primary bg-text-primary text-white' : 'border-border'
+                  }`}
+                >
+                  Aa
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <label className="flex flex-col gap-1 text-sm">
+            Tamanho da fonte
+            <select
+              value={element.fontSize}
+              onChange={(e) => updateElement(element.id, { fontSize: Number(e.target.value) })}
+              className="rounded-lg border border-border px-3 py-2"
+            >
+              {FONT_SIZES.map((size) => (
+                <option key={size} value={size}>
+                  {size}px
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            Cor
+            <input
+              type="color"
+              value={element.color}
+              onChange={(e) => updateElement(element.id, { color: e.target.value })}
+              className="h-10 w-full rounded-lg border border-border"
+            />
+          </label>
+
+          <div className="flex flex-col gap-1 text-sm">
+            Alinhamento
+            <div className="flex gap-2">
+              {ALIGNMENTS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => updateElement(element.id, { textAlign: value })}
+                  aria-pressed={element.textAlign === value}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                    element.textAlign === value ? 'border-text-primary bg-text-primary text-white' : 'border-border'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      <label className="flex flex-col gap-1 text-sm">
+        Rotação ({element.rotation}°)
+        <input
+          type="range"
+          min="-180"
+          max="180"
+          value={element.rotation}
+          onChange={(e) => updateElement(element.id, { rotation: Number(e.target.value) })}
+        />
+      </label>
+    </div>
+  );
+}
