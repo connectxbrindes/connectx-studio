@@ -75,7 +75,7 @@ Deno.serve(async (req: Request) => {
 
       const { error: profileError } = await admin
         .from("profiles")
-        .insert({ id: created.user.id, role: "reseller", reseller_id: resellerId });
+        .insert({ id: created.user.id, role: "reseller", reseller_id: resellerId, email });
       if (profileError) return json({ error: profileError.message });
 
       return json({ ok: true });

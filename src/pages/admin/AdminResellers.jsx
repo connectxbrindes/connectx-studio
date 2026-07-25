@@ -34,6 +34,8 @@ export default function AdminResellers() {
   // senão a tela só oferece "redefinir senha" pra um login que não existe.
   const [hasLogin, setHasLogin] = useState(false);
   const [checkingLogin, setCheckingLogin] = useState(false);
+  // E-mail de acesso já cadastrado (vem do profile) — exibido só leitura ao editar.
+  const [loginEmailExisting, setLoginEmailExisting] = useState('');
 
   useEffect(() => {
     fetchResellers();
@@ -83,12 +85,18 @@ export default function AdminResellers() {
     setLoginError('');
     setPasswordResetDone(false);
     setHasLogin(false);
+    setLoginEmailExisting('');
     setIsModalOpen(true);
 
     if (reseller) {
       setCheckingLogin(true);
-      const { data } = await supabaseAdmin.from('profiles').select('id').eq('reseller_id', reseller.id).maybeSingle();
+      const { data } = await supabaseAdmin
+        .from('profiles')
+        .select('id, email')
+        .eq('reseller_id', reseller.id)
+        .maybeSingle();
       setHasLogin(Boolean(data));
+      setLoginEmailExisting(data?.email || '');
       setCheckingLogin(false);
     }
   };
@@ -342,20 +350,37 @@ export default function AdminResellers() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-end gap-3">
-                <div className="flex-1">
-                  <label className="mb-1 block text-sm font-medium text-text-secondary">Redefinir senha</label>
+              <div className="flex flex-col gap-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-text-secondary">E-mail de acesso</label>
                   <input
-                    type="password"
-                    value={resetPassword}
-                    onChange={(e) => setResetPassword(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent"
-                    placeholder="Nova senha"
+                    type="email"
+                    value={loginEmailExisting}
+                    readOnly
+                    className="w-full cursor-default rounded-lg border border-border bg-bg px-4 py-2 text-text-secondary outline-none"
                   />
                 </div>
-                <Button type="button" variant="secondary" onClick={handleResetPassword} disabled={resettingPassword}>
-                  {resettingPassword ? 'Salvando...' : 'Redefinir'}
-                </Button>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-text-secondary">Redefinir senha</label>
+                  {/* A senha atual não pode ser exibida (fica criptografada no
+                      Supabase, ninguém consegue ler de volta) — o admin define
+                      uma nova aqui e repassa pra unidade. */}
+                  <div className="flex items-end gap-3">
+                    <input
+                      type="password"
+                      value={resetPassword}
+                      onChange={(e) => setResetPassword(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent"
+                      placeholder="Nova senha"
+                    />
+                    <Button type="button" variant="secondary" onClick={handleResetPassword} disabled={resettingPassword}>
+                      {resettingPassword ? 'Salvando...' : 'Redefinir'}
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-xs text-text-secondary">
+                    Por segurança, a senha atual não pode ser exibida. Defina uma nova aqui para substituí-la.
+                  </p>
+                </div>
               </div>
             )}
 
