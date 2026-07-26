@@ -24,7 +24,8 @@ export default function AdminDashboard() {
     <div className="flex min-h-screen bg-bg">
       {/* Sidebar */}
       <aside className="w-64 flex-shrink-0 border-r border-border bg-panel">
-        <div className="flex h-16 items-center px-6 border-b border-border">
+        <div className="flex h-16 items-center gap-3 px-6 border-b border-border">
+          <img src="/logo-connectx-icon.svg" alt="ConnectX Brindes" className="h-10 w-auto" />
           <h1 className="text-xl font-bold">
             {role === 'master' ? 'Painel Master' : 'Painel'}<span className="text-accent">.</span>
           </h1>
