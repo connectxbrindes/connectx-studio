@@ -88,6 +88,23 @@ export default function AdminOrders() {
         ),
     },
     {
+      key: 'art',
+      label: 'Arte',
+      render: (o) =>
+        o.art_image_url ? (
+          <a href={o.art_image_url} target="_blank" rel="noreferrer" download>
+            <img
+              src={o.art_image_url}
+              alt={`Arte do pedido ${formatOrderNumber(o)}`}
+              title="Arte montada (sem mockup) — clique para abrir/baixar"
+              className="h-14 w-14 rounded-lg border border-border bg-[repeating-conic-gradient(#e5e5e5_0_25%,#fff_0_50%)] bg-[length:12px_12px] object-contain"
+            />
+          </a>
+        ) : (
+          '—'
+        ),
+    },
+    {
       key: 'order_number',
       label: 'Pedido',
       render: (o) => (

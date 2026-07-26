@@ -23,6 +23,7 @@ export default function Step4Review() {
   const resetWizard = useStore((s) => s.resetWizard);
   const { exportNode } = useCanvasExport();
   const previewRef = useRef(null);
+  const artRef = useRef(null);
   const [isAdding, setIsAdding] = useState(false);
   const [viewMode, setViewMode] = useState('2d');
   const [texture3d, setTexture3d] = useState(null);
@@ -47,11 +48,15 @@ export default function Step4Review() {
   const handleAddToCart = async () => {
     setIsAdding(true);
     const thumbnail = await exportNode(previewRef.current);
+    // Arte montada (sem mockup/máscara, fundo transparente) em resolução maior
+    // — vai pro pedido pra produção usar direto, sem remontar o layout.
+    const artImage = await exportNode(artRef.current, { pixelRatio: 3 });
     addItem({
       productId: product.id,
       productName: product.name,
       image: color?.image || product.image,
       thumbnail,
+      artImage,
       unitPrice: product.price,
       color: color.name,
       colorId: color.id,
@@ -114,6 +119,21 @@ export default function Step4Review() {
           {viewMode === '3d' && texture3d && (
             <Viewer3D modelUrl={product.model3dUrl} textureUrl={texture3d} className="h-[400px] w-full" />
           )}
+        </div>
+
+        {/* Render oculto da arte montada (sem mockup/máscara, fundo
+            transparente) só pra capturar a imagem que vai no pedido — mesma
+            geometria da prévia; posicionado fora da tela. */}
+        <div aria-hidden="true" className="pointer-events-none fixed left-[-99999px] top-0 w-[360px]">
+          <ProductPreview
+            ref={artRef}
+            product={product}
+            color={color}
+            model={model}
+            elements={elements}
+            heightClass="h-[560px]"
+            artOnly
+          />
         </div>
       </div>
 

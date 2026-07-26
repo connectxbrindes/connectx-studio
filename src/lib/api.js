@@ -414,6 +414,11 @@ export async function uploadOrderOriginalsZip(blob) {
   return uploadOrderAsset('zips', blob, 'zip');
 }
 
+/** Sobe a arte montada (PNG transparente, sem mockup) que a produção usa direto. */
+export async function uploadOrderArt(blob) {
+  return uploadOrderAsset('art', blob, 'png');
+}
+
 // ---------------------------------------------------------------------------
 // Variação por Modelo (estoque + mockup por Produto+Modelo)
 // ---------------------------------------------------------------------------
@@ -587,7 +592,7 @@ export async function fetchOrders() {
     .select(`
       id, order_number, sequence_number, customer_name, customer_contact, quantity,
       personalization_fee, unit_price, line_total, status, created_at,
-      preview_image_url, original_files_zip_url,
+      preview_image_url, original_files_zip_url, art_image_url,
       product:products ( name ),
       color:product_colors ( name ),
       size:product_sizes ( name ),
@@ -641,6 +646,7 @@ export async function updateOrderStatus(orderId, status) {
 async function buildOrderAssets(item) {
   let previewUrl = null;
   let zipUrl = null;
+  let artUrl = null;
 
   try {
     if (item.thumbnail) {
@@ -650,6 +656,16 @@ async function buildOrderAssets(item) {
     }
   } catch (err) {
     console.error('Error uploading order preview:', err);
+  }
+
+  try {
+    if (item.artImage) {
+      const artBlob = await (await fetch(item.artImage)).blob();
+      const { url } = await uploadOrderArt(artBlob);
+      artUrl = url;
+    }
+  } catch (err) {
+    console.error('Error uploading order art:', err);
   }
 
   try {
@@ -671,7 +687,7 @@ async function buildOrderAssets(item) {
     console.error('Error building order originals zip:', err);
   }
 
-  return { previewUrl, zipUrl };
+  return { previewUrl, zipUrl, artUrl };
 }
 
 /** Grava um pedido por item do carrinho — chamado a partir do "Finalizar
@@ -685,7 +701,7 @@ export async function submitOrders(cartItems, customer) {
 
   const rows = await Promise.all(
     cartItems.map(async (item) => {
-      const { previewUrl, zipUrl } = await buildOrderAssets(item);
+      const { previewUrl, zipUrl, artUrl } = await buildOrderAssets(item);
       return {
         customer_name: customer.name,
         customer_contact: customer.contact || null,
@@ -701,6 +717,7 @@ export async function submitOrders(cartItems, customer) {
         line_total: item.lineTotal,
         preview_image_url: previewUrl,
         original_files_zip_url: zipUrl,
+        art_image_url: artUrl,
       };
     })
   );

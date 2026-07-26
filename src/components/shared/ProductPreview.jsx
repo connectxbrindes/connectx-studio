@@ -1,12 +1,16 @@
 import { forwardRef } from 'react';
 
 const ProductPreview = forwardRef(function ProductPreview(
-  { product, color, model, elements, className = '', bare = false, heightClass = 'h-[420px]' },
+  { product, color, model, elements, className = '', bare = false, heightClass = 'h-[420px]', artOnly = false },
   ref
 ) {
   // 3 camadas quando o modelo tem mockup: foto (fundo) → arte do cliente
   // (meio) → máscara por cima (cobre o que estiver fora da área de
   // personalização) — mesma lógica do Canvas.jsx do Passo 3.
+  //
+  // artOnly: só a arte do cliente (elementos), sem mockup e sem máscara, em
+  // fundo transparente — é a "arte montada" que vai pro pedido pra produção
+  // usar direto, mantendo a mesma geometria (posições em %) da prévia.
   const backgroundImage = model?.mockupImageUrl || color?.image || product.image;
   const maskImageUrl = model?.maskImageUrl || null;
   const hasModelMockup = Boolean(model?.mockupImageUrl);
@@ -18,17 +22,19 @@ const ProductPreview = forwardRef(function ProductPreview(
         hasModelMockup
           ? `mx-auto aspect-[331/590] ${bare ? 'h-full' : `${heightClass} overflow-hidden rounded-xl`}`
           : `w-full ${bare ? 'h-full' : `${heightClass} overflow-hidden rounded-xl`}`
-      } ${hasModelMockup ? 'bg-white' : color?.image ? 'bg-panel' : ''} ${className}`}
-      style={hasModelMockup || color?.image ? undefined : { backgroundColor: color.hex }}
+      } ${artOnly ? '' : hasModelMockup ? 'bg-white' : color?.image ? 'bg-panel' : ''} ${className}`}
+      style={artOnly || hasModelMockup || color?.image ? undefined : { backgroundColor: color.hex }}
     >
-      <img
-        src={backgroundImage}
-        alt={product.name}
-        draggable={false}
-        className={`pointer-events-none absolute inset-0 object-contain ${
-          hasModelMockup ? 'h-full w-full' : 'm-auto max-h-[80%] max-w-[80%]'
-        }`}
-      />
+      {!artOnly && (
+        <img
+          src={backgroundImage}
+          alt={product.name}
+          draggable={false}
+          className={`pointer-events-none absolute inset-0 object-contain ${
+            hasModelMockup ? 'h-full w-full' : 'm-auto max-h-[80%] max-w-[80%]'
+          }`}
+        />
+      )}
       <div className="absolute inset-0">
         {elements.map((element) => (
           <div
@@ -69,7 +75,7 @@ const ProductPreview = forwardRef(function ProductPreview(
         ))}
       </div>
 
-      {maskImageUrl && (
+      {maskImageUrl && !artOnly && (
         <img
           src={maskImageUrl}
           alt=""

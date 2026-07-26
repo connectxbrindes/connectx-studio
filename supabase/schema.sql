@@ -356,6 +356,9 @@ create policy "resellers self read" on resellers for select using (is_master() o
 
 alter table orders add column if not exists preview_image_url text;
 alter table orders add column if not exists original_files_zip_url text;
+-- Arte montada do cliente (sem mockup/máscara, fundo transparente) — a
+-- produção usa direto, sem remontar o layout.
+alter table orders add column if not exists art_image_url text;
 
 create or replace function place_order(order_rows jsonb)
 returns void
@@ -370,7 +373,7 @@ begin
     insert into orders (
       customer_name, customer_contact, reseller_id, product_id, color_id, size_id, model_id,
       quantity, personalization_snapshot, personalization_fee, unit_price, line_total,
-      preview_image_url, original_files_zip_url
+      preview_image_url, original_files_zip_url, art_image_url
     ) values (
       row_data->>'customer_name', row_data->>'customer_contact',
       nullif(row_data->>'reseller_id','')::uuid, nullif(row_data->>'product_id','')::uuid,
@@ -378,7 +381,7 @@ begin
       nullif(row_data->>'model_id','')::uuid, (row_data->>'quantity')::int,
       row_data->'personalization_snapshot', (row_data->>'personalization_fee')::numeric,
       (row_data->>'unit_price')::numeric, (row_data->>'line_total')::numeric,
-      row_data->>'preview_image_url', row_data->>'original_files_zip_url'
+      row_data->>'preview_image_url', row_data->>'original_files_zip_url', row_data->>'art_image_url'
     );
 
     if row_data->>'model_id' is not null then
