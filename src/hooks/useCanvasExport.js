@@ -7,7 +7,8 @@ export function useCanvasExport() {
     if (!node) return null;
     try {
       return await toPng(node, { pixelRatio });
-    } catch {
+    } catch (err) {
+      console.error('exportNode falhou:', err);
       return null;
     }
   };

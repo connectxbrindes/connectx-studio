@@ -24,6 +24,7 @@ export default function Step4Review() {
   const { exportNode } = useCanvasExport();
   const previewRef = useRef(null);
   const artRef = useRef(null);
+  const artBoxRef = useRef(null);
   const [isAdding, setIsAdding] = useState(false);
   const [viewMode, setViewMode] = useState('2d');
   const [texture3d, setTexture3d] = useState(null);
@@ -47,10 +48,26 @@ export default function Step4Review() {
 
   const handleAddToCart = async () => {
     setIsAdding(true);
+    // Espelha o tamanho da prévia visível no render oculto da arte, pra a
+    // geometria bater exatamente (posições em % → mesmo container). Espera as
+    // fontes carregarem antes de capturar (texto sai certo).
+    const box = previewRef.current?.getBoundingClientRect();
+    if (box && artBoxRef.current) {
+      artBoxRef.current.style.width = `${Math.round(box.width)}px`;
+      artBoxRef.current.style.height = `${Math.round(box.height)}px`;
+      void artBoxRef.current.offsetHeight; // força reflow antes de capturar
+    }
+    if (document.fonts?.ready) {
+      try {
+        await document.fonts.ready;
+      } catch {
+        /* ignora */
+      }
+    }
     const thumbnail = await exportNode(previewRef.current);
-    // Arte montada (sem mockup/máscara, fundo transparente) em resolução maior
-    // — vai pro pedido pra produção usar direto, sem remontar o layout.
-    const artImage = await exportNode(artRef.current, { pixelRatio: 3 });
+    // Arte montada (sem mockup/máscara, fundo transparente) — vai pro pedido
+    // pra produção usar direto, sem remontar o layout.
+    const artImage = await exportNode(artRef.current);
     addItem({
       productId: product.id,
       productName: product.name,
@@ -122,18 +139,23 @@ export default function Step4Review() {
         </div>
 
         {/* Render oculto da arte montada (sem mockup/máscara, fundo
-            transparente) só pra capturar a imagem que vai no pedido — mesma
-            geometria da prévia; posicionado fora da tela. */}
-        <div aria-hidden="true" className="pointer-events-none fixed left-[-99999px] top-0 w-[360px]">
-          <ProductPreview
-            ref={artRef}
-            product={product}
-            color={color}
-            model={model}
-            elements={elements}
-            heightClass="h-[560px]"
-            artOnly
-          />
+            transparente) só pra capturar a imagem que vai no pedido. Fica no
+            fluxo mas 0×0 + overflow-hidden (invisível, sem quebrar o
+            html-to-image como acontecia fora da tela). O box interno tem o
+            tamanho da prévia (setado no add-to-cart) e o ProductPreview bare
+            preenche ele — geometria idêntica à prévia. */}
+        <div aria-hidden="true" className="h-0 w-0 overflow-hidden">
+          <div ref={artBoxRef} style={{ width: 314, height: 560 }}>
+            <ProductPreview
+              ref={artRef}
+              product={product}
+              color={color}
+              model={model}
+              elements={elements}
+              bare
+              artOnly
+            />
+          </div>
         </div>
       </div>
 
