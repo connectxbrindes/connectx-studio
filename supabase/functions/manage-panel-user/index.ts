@@ -72,9 +72,18 @@ Deno.serve(async (req: Request) => {
 
     if (action === "update_permissions") {
       if (!userId) return json({ error: "Usuário inválido." });
+      // Trocar o e-mail (auth) exige service role; se veio um e-mail, atualiza
+      // o usuário de autenticação e o profile junto com as permissões.
+      if (email) {
+        const { error: emailErr } = await admin.auth.admin.updateUserById(userId, { email, email_confirm: true });
+        if (emailErr) return json({ error: emailErr.message });
+      }
       const { error } = await admin
         .from("profiles")
-        .update({ permissions: Array.isArray(permissions) ? permissions : [] })
+        .update({
+          permissions: Array.isArray(permissions) ? permissions : [],
+          ...(email ? { email } : {}),
+        })
         .eq("id", userId);
       if (error) return json({ error: error.message });
       return json({ ok: true });

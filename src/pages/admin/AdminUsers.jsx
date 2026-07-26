@@ -63,14 +63,18 @@ export default function AdminUsers() {
     e.preventDefault();
     setError('');
 
-    if (!editingUser && (!email.trim() || !password.trim())) {
-      setError('Informe e-mail e senha para o novo usuário.');
+    if (!email.trim()) {
+      setError('Informe o e-mail de acesso.');
+      return;
+    }
+    if (!editingUser && !password.trim()) {
+      setError('Informe a senha para o novo usuário.');
       return;
     }
 
     setSaving(true);
     const { error: err } = editingUser
-      ? await managePanelUser({ action: 'update_permissions', userId: editingUser.id, permissions })
+      ? await managePanelUser({ action: 'update_permissions', userId: editingUser.id, permissions, email: email.trim() })
       : await managePanelUser({ action: 'create', email: email.trim(), password: password.trim(), permissions });
     setSaving(false);
 
@@ -207,11 +211,10 @@ export default function AdminUsers() {
             <label className="mb-1 block text-sm font-medium text-text-secondary">E-mail de acesso *</label>
             <input
               type="email"
-              required={!editingUser}
-              disabled={Boolean(editingUser)}
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent disabled:opacity-60"
+              className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent"
               placeholder="usuario@exemplo.com"
             />
           </div>
