@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchOrders, updateOrderStatus } from '../../lib/api';
-import { shouldNotifyStatus, buildStatusMessage, sendWhatsAppNotification } from '../../lib/whatsapp';
+import { shouldNotifyStatus, notifyOrderStatus } from '../../lib/whatsapp';
 import { formatCurrency } from '../../utils/price';
 import DataTable from '../../components/admin/DataTable';
 
@@ -48,18 +48,17 @@ export default function AdminOrders() {
 
     if (!shouldNotifyStatus(status)) return;
 
-    const message = buildStatusMessage(status, {
-      customerName: order.customer_name,
-      sequenceNumber: order.sequence_number,
-    });
-    const { sent, reason } = await sendWhatsAppNotification({ phone: order.reseller?.phone, message });
+    const { sent, reason } = await notifyOrderStatus(order.id);
+    const unidade = order.reseller?.name || 'a unidade';
 
-    if (!sent) {
-      setNotice(
-        reason === 'no_phone'
-          ? `Status atualizado, mas "${order.reseller?.name || 'a unidade'}" não tem telefone cadastrado — nenhuma notificação foi enviada.`
-          : `Status atualizado. Notificação de WhatsApp ainda não é enviada de verdade (provedor não configurado): "${message}"`
-      );
+    if (sent) {
+      setNotice(`Status atualizado e ${unidade} foi notificada no WhatsApp.`);
+    } else if (reason === 'no_phone') {
+      setNotice(`Status atualizado, mas "${unidade}" não tem telefone cadastrado — nenhuma notificação foi enviada.`);
+    } else if (reason === 'not_configured') {
+      setNotice('Status atualizado. A notificação por WhatsApp ainda não está configurada (aguardando a conta da Meta).');
+    } else {
+      setNotice('Status atualizado, mas houve um erro ao enviar a notificação por WhatsApp.');
     }
   };
 

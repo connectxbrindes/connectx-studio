@@ -1,48 +1,30 @@
+import { supabaseAdmin } from './supabaseClient';
+
 /**
- * Notificação por WhatsApp quando o status de um pedido muda. Ainda sem
- * provedor configurado (Z-API, Meta Cloud API, Twilio, etc) — por enquanto
- * só monta a mensagem certa e loga no console, sem enviar de verdade.
- *
- * Pra ligar um provedor de verdade depois: troca só o corpo de `sendWhatsApp`
- * por uma chamada fetch() pra API do provedor escolhido. Todo o resto (quando
- * disparar, qual mensagem) já fica pronto.
+ * Notificação por WhatsApp quando o status do pedido muda. O envio de verdade
+ * acontece na Edge Function `notify-order-status` (API oficial da Meta, token
+ * em segredo do servidor). Aqui só decidimos QUANDO notificar e disparamos.
  */
 
-const MESSAGE_BUILDERS = {
-  pending: ({ customerName, sequenceNumber }) =>
-    `O pedido de ${customerName}, número #${sequenceNumber}, está com uma pendência. Entre em contato com o setor de produção.`,
-  canceled: ({ customerName, sequenceNumber }) =>
-    `O pedido de ${customerName}, número #${sequenceNumber}, foi cancelado.`,
-  completed: ({ customerName, sequenceNumber }) =>
-    `Eba! O pedido de ${customerName}, número #${sequenceNumber}, já está pronto para ser retirado.`,
-};
+// Status que geram notificação pra unidade. "producing" fica de fora — a
+// unidade acompanha esse na própria tela de Pedidos, sem precisar de mensagem.
+const NOTIFYING_STATUSES = new Set(['pending', 'canceled', 'completed']);
 
-/** Status que disparam notificação. "producing" fica de fora de propósito —
- * a unidade só acompanha esse status olhando a tela de Pedidos dela, sem
- * precisar de mensagem. */
 export function shouldNotifyStatus(status) {
-  return status in MESSAGE_BUILDERS;
+  return NOTIFYING_STATUSES.has(status);
 }
 
-export function buildStatusMessage(status, { customerName, sequenceNumber }) {
-  const build = MESSAGE_BUILDERS[status];
-  if (!build) return null;
-  return build({ customerName, sequenceNumber });
-}
-
-/** Envia a notificação — hoje é um stub (só loga), até um provedor ser
- * configurado. Retorna { sent: false, reason: 'not_configured' } nesse caso,
- * pra quem chamar poder avisar o usuário que nada foi enviado de verdade. */
-export async function sendWhatsAppNotification({ phone, message }) {
-  if (!phone) {
-    console.warn('WhatsApp not sent: unidade sem telefone cadastrado.', { message });
-    return { sent: false, reason: 'no_phone' };
-  }
-
-  // TODO: plugar um provedor real aqui (Z-API, Meta Cloud API, Twilio...).
-  console.info('[WhatsApp stub] Envio não configurado ainda. Mensagem que seria enviada:', {
-    phone,
-    message,
+/** Dispara a notificação do pedido. A function lê o pedido + telefone da
+ * unidade no servidor e envia o template certo pro status atual. Retorna
+ * `{ sent, reason }` — `reason` é 'not_configured' enquanto a Meta não
+ * estiver configurada (nada é enviado, mas nada quebra). */
+export async function notifyOrderStatus(orderId) {
+  const { data, error } = await supabaseAdmin.functions.invoke('notify-order-status', {
+    body: { orderId },
   });
-  return { sent: false, reason: 'not_configured' };
+  if (error) {
+    console.error('Error invoking notify-order-status:', error);
+    return { sent: false, reason: 'invoke_error' };
+  }
+  return { sent: Boolean(data?.sent), reason: data?.reason || null };
 }
