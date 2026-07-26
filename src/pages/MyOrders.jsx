@@ -23,6 +23,14 @@ const TILES = [
 const formatOrderNumber = (o) => `#${String(o.sequence_number).padStart(4, '0')}`;
 const dayKey = (iso) => new Date(iso).toLocaleDateString('pt-BR');
 
+// 'YYYY-MM-DD' no fuso local — pra casar com o valor do <input type="date">.
+function isoDateKey(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const todayKey = isoDateKey(new Date());
+
 function dayLabel(iso) {
   const key = dayKey(iso);
   const today = new Date();
@@ -44,6 +52,7 @@ export default function MyOrders() {
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const searchRef = useRef(null);
 
   useEffect(() => {
@@ -69,6 +78,7 @@ export default function MyOrders() {
     const term = search.trim().toLowerCase();
     const filtered = orders.filter((o) => {
       if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+      if (dateFilter && isoDateKey(o.created_at) !== dateFilter) return false;
       if (!term) return true;
       const haystack = [
         o.customer_name,
@@ -93,7 +103,7 @@ export default function MyOrders() {
       byDay[index.get(key)].orders.push(o);
     }
     return byDay;
-  }, [orders, statusFilter, search]);
+  }, [orders, statusFilter, search, dateFilter]);
 
   const totalFiltered = groups.reduce((sum, g) => sum + g.orders.length, 0);
 
@@ -136,30 +146,62 @@ export default function MyOrders() {
           })}
         </div>
 
-        {/* Busca */}
-        <div className="mb-8 flex items-center gap-3 rounded-xl border border-border bg-panel px-4 py-3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 text-text-secondary">
-            <circle cx="11" cy="11" r="7" />
-            <path strokeLinecap="round" d="m20 20-3-3" />
-          </svg>
-          <input
-            ref={searchRef}
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por cliente, nº do pedido, telefone ou produto"
-            className="w-full bg-transparent text-sm outline-none placeholder:text-text-secondary"
-          />
-          {search && (
+        {/* Busca + filtro por data */}
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-1 items-center gap-3 rounded-xl border border-border bg-panel px-4 py-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 text-text-secondary">
+              <circle cx="11" cy="11" r="7" />
+              <path strokeLinecap="round" d="m20 20-3-3" />
+            </svg>
+            <input
+              ref={searchRef}
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por cliente, nº do pedido, telefone ou produto"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-text-secondary"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Limpar busca"
+                className="text-text-secondary hover:text-text-primary"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-panel px-4 py-3">
+            <span className="text-sm text-text-secondary">Data</span>
+            <input
+              type="date"
+              value={dateFilter}
+              max={todayKey}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="bg-transparent text-sm outline-none"
+            />
             <button
               type="button"
-              onClick={() => setSearch('')}
-              aria-label="Limpar busca"
-              className="text-text-secondary hover:text-text-primary"
+              onClick={() => setDateFilter(todayKey)}
+              className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                dateFilter === todayKey ? 'bg-text-primary text-white' : 'border border-border text-text-secondary'
+              }`}
             >
-              ✕
+              Hoje
             </button>
-          )}
+            {dateFilter && (
+              <button
+                type="button"
+                onClick={() => setDateFilter('')}
+                aria-label="Limpar data"
+                className="text-text-secondary hover:text-text-primary"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {isLoading ? (
