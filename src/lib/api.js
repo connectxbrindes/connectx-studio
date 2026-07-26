@@ -611,7 +611,7 @@ export async function fetchMyOrders() {
   const { data, error } = await supabase
     .from('orders')
     .select(`
-      id, order_number, sequence_number, customer_name, quantity,
+      id, order_number, sequence_number, customer_name, customer_contact, quantity,
       line_total, status, created_at, preview_image_url,
       product:products ( name ),
       color:product_colors ( name ),
