@@ -612,7 +612,7 @@ export async function fetchMyOrders() {
     .from('orders')
     .select(`
       id, order_number, sequence_number, customer_name, quantity,
-      line_total, status, created_at,
+      line_total, status, created_at, preview_image_url,
       product:products ( name ),
       color:product_colors ( name ),
       size:product_sizes ( name ),
