@@ -41,13 +41,20 @@ function formFromProduct(product) {
     has_3d_viewer: Boolean(product.has_3d_viewer),
     model_3d_url: product.model_3d_url || '',
     uses_device_models: Boolean(product.uses_device_models),
-    colors: (product.colors || []).map((c) => ({ name: c.name, hex: c.hex, image_url: c.image_url || '' })),
+    colors: (product.colors || []).map((c) => ({
+      name: c.name,
+      hex: c.hex,
+      image_url: c.image_url || '',
+      stock_quantity: c.stock_quantity ?? '',
+      bling_sku: c.bling_sku || '',
+    })),
     sizes: (product.sizes || []).map((s) => ({ name: s.name })),
     variants: (product.variants || []).map((v) => ({
       brandModelId: v.brand_model_id,
       brandName: v.brand_model?.brand?.name || '',
       modelName: v.brand_model?.name || '',
       stockQuantity: v.stock_quantity,
+      blingSku: v.bling_sku || '',
     })),
   };
 }
@@ -99,7 +106,8 @@ function ColorListEditor({ items, onChange }) {
     onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   };
   const removeItem = (index) => onChange(items.filter((_, i) => i !== index));
-  const addItem = () => onChange([...items, { name: '', hex: '#000000', image_url: '' }]);
+  const addItem = () =>
+    onChange([...items, { name: '', hex: '#000000', image_url: '', stock_quantity: '', bling_sku: '' }]);
 
   return (
     <div>
@@ -122,6 +130,29 @@ function ColorListEditor({ items, onChange }) {
                 placeholder="Nome da cor (ex: Rosa)"
                 className="rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
               />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="mb-1 block text-xs text-text-secondary">Estoque</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={item.stock_quantity}
+                    onChange={(e) => updateItem(index, { stock_quantity: e.target.value })}
+                    placeholder="Sem controle"
+                    className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
+                  />
+                </div>
+                <div>
+                  <span className="mb-1 block text-xs text-text-secondary">SKU Bling</span>
+                  <input
+                    type="text"
+                    value={item.bling_sku}
+                    onChange={(e) => updateItem(index, { bling_sku: e.target.value })}
+                    placeholder="código no Bling"
+                    className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
+                  />
+                </div>
+              </div>
               <ImageUploader
                 label="Foto do produto nessa cor"
                 value={item.image_url}
@@ -167,6 +198,7 @@ function VariantListEditor({ items, onChange, allBrandModels }) {
         brandName: bm.brand?.name || '',
         modelName: bm.name,
         stockQuantity: 0,
+        blingSku: '',
       },
     ]);
     setSelectedToAdd('');
@@ -181,18 +213,11 @@ function VariantListEditor({ items, onChange, allBrandModels }) {
       </p>
       <div className="flex flex-col gap-3">
         {items.map((item, index) => (
-          <div key={item.brandModelId} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-            <p className="text-sm font-semibold">
-              {item.brandName} · {item.modelName}
-            </p>
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="0"
-                value={item.stockQuantity}
-                onChange={(e) => updateItem(index, { stockQuantity: Number(e.target.value) })}
-                className="w-24 rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
-              />
+          <div key={item.brandModelId} className="flex flex-col gap-3 rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold">
+                {item.brandName} · {item.modelName}
+              </p>
               <button
                 type="button"
                 onClick={() => removeItem(index)}
@@ -200,6 +225,28 @@ function VariantListEditor({ items, onChange, allBrandModels }) {
               >
                 Remover
               </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <span className="mb-1 block text-xs text-text-secondary">Estoque</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={item.stockQuantity}
+                  onChange={(e) => updateItem(index, { stockQuantity: Number(e.target.value) })}
+                  className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
+                />
+              </div>
+              <div>
+                <span className="mb-1 block text-xs text-text-secondary">SKU Bling</span>
+                <input
+                  type="text"
+                  value={item.blingSku || ''}
+                  onChange={(e) => updateItem(index, { blingSku: e.target.value })}
+                  placeholder="código no Bling"
+                  className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
+                />
+              </div>
             </div>
           </div>
         ))}

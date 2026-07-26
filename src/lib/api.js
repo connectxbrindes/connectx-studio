@@ -38,7 +38,7 @@ export async function fetchCatalog() {
         category:categories ( id, name, slug ),
         subcategory:subcategories ( id, name, slug, category:categories ( id, name, slug ) ),
         brand:brands ( id, name, slug ),
-        colors:product_colors ( id, name, hex, image_url, sort_order ),
+        colors:product_colors ( id, name, hex, image_url, sort_order, stock_quantity ),
         sizes:product_sizes ( id, name, sort_order ),
         variants:product_model_variants ( brand_model_id, stock_quantity )
       `)
@@ -102,6 +102,8 @@ export async function fetchCatalog() {
           name: c.name,
           hex: c.hex,
           image: c.image_url,
+          // null = sem controle de estoque (não bloqueia); número = saldo.
+          stockQuantity: c.stock_quantity ?? null,
         })),
         sizes: sortedSizes.length > 0 ? sortedSizes.map((s) => ({ id: s.id, name: s.name })) : null,
         models: productModels,
@@ -261,10 +263,10 @@ export async function fetchAdminProducts() {
       category:categories ( id, name ),
       subcategory:subcategories ( id, name, category:categories ( id, name ) ),
       brand:brands ( id, name ),
-      colors:product_colors ( id, name, hex, image_url, sort_order ),
+      colors:product_colors ( id, name, hex, image_url, sort_order, stock_quantity, bling_sku ),
       sizes:product_sizes ( id, name, sort_order ),
       variants:product_model_variants (
-        id, brand_model_id, stock_quantity,
+        id, brand_model_id, stock_quantity, bling_sku,
         brand_model:brand_models ( id, name, brand:brands ( id, name ) )
       )
     `)
@@ -321,6 +323,8 @@ export async function replaceProductChildren(productId, { colors = [], sizes = [
           hex: c.hex,
           image_url: c.image_url || null,
           sort_order: index,
+          stock_quantity: c.stock_quantity === '' || c.stock_quantity == null ? null : Number(c.stock_quantity),
+          bling_sku: c.bling_sku?.trim() || null,
         }))
       )
     );
@@ -437,6 +441,7 @@ export async function replaceProductModelVariants(productId, variants = []) {
       product_id: productId,
       brand_model_id: v.brandModelId,
       stock_quantity: v.stockQuantity,
+      bling_sku: v.blingSku?.trim() || null,
     }))
   );
 

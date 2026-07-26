@@ -500,3 +500,13 @@ create policy "resellers master only" on resellers for all
   using (is_master() or has_permission('resellers'))
   with check (is_master() or has_permission('resellers'));
 
+-- ---------------------------------------------------------------------------
+-- Integração de estoque com o Bling (ERP)
+-- ---------------------------------------------------------------------------
+
+-- Térmicos: estoque por produto+cor (capas já têm estoque por produto+modelo
+-- em product_model_variants). bling_sku = código do item no Bling (mapeamento).
+alter table product_colors add column if not exists stock_quantity int;
+alter table product_colors add column if not exists bling_sku text;
+alter table product_model_variants add column if not exists bling_sku text;
+

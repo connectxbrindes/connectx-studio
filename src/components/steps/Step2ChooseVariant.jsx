@@ -27,6 +27,11 @@ export default function Step2ChooseVariant() {
     model.stockQuantity !== null && model.stockQuantity !== undefined && model.stockQuantity <= 0;
   const selectedModelOutOfStock = selectedModel ? isOutOfStock(selectedModel) : false;
 
+  // Térmicos: estoque por cor. null/undefined = sem controle (não bloqueia).
+  const isColorOutOfStock = (color) =>
+    color.stockQuantity !== null && color.stockQuantity !== undefined && color.stockQuantity <= 0;
+  const selectedColorOutOfStock = selectedColor ? isColorOutOfStock(selectedColor) : false;
+
   // Todos os produtos da mesma categoria escolhida no Passo 1 — quando há
   // mais de um, o cliente escolhe qual aqui, antes de marca/modelo/cor.
   const categoryProducts = useMemo(
@@ -134,20 +139,28 @@ export default function Step2ChooseVariant() {
             Cor <span className="ml-2 font-medium normal-case text-text-primary">{selectedColor.name}</span>
           </h3>
           <div className="flex gap-4">
-            {product.options.colors.map((color) => (
-              <button
-                key={color.id}
-                type="button"
-                aria-label={color.name}
-                aria-pressed={selectedColor.id === color.id}
-                onClick={() => selectColor(color)}
-                style={{ backgroundColor: color.hex }}
-                className={`h-12 w-12 rounded-full shadow transition-transform duration-200 hover:scale-110 ${
-                  selectedColor.id === color.id ? 'ring-2 ring-text-primary ring-offset-2' : ''
-                }`}
-              />
-            ))}
+            {product.options.colors.map((color) => {
+              const out = isColorOutOfStock(color);
+              return (
+                <button
+                  key={color.id}
+                  type="button"
+                  aria-label={out ? `${color.name} (esgotado)` : color.name}
+                  title={out ? 'Esgotado' : color.name}
+                  aria-pressed={selectedColor.id === color.id}
+                  disabled={out}
+                  onClick={() => selectColor(color)}
+                  style={{ backgroundColor: color.hex }}
+                  className={`h-12 w-12 rounded-full shadow transition-transform duration-200 ${
+                    out ? 'cursor-not-allowed opacity-30' : 'hover:scale-110'
+                  } ${selectedColor.id === color.id ? 'ring-2 ring-text-primary ring-offset-2' : ''}`}
+                />
+              );
+            })}
           </div>
+          {selectedColorOutOfStock && (
+            <p className="mt-2 text-sm text-accent">Sem estoque para esta cor no momento.</p>
+          )}
         </div>
 
         {product.options.sizes && (
@@ -177,7 +190,7 @@ export default function Step2ChooseVariant() {
           <Button variant="secondary" onClick={goBack}>
             Voltar
           </Button>
-          <Button onClick={goNext} disabled={!canProceed || selectedModelOutOfStock}>
+          <Button onClick={goNext} disabled={!canProceed || selectedModelOutOfStock || selectedColorOutOfStock}>
             Próximo
           </Button>
         </div>
