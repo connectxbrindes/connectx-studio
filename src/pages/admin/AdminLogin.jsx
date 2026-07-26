@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabaseAdmin, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { useRememberedEmail } from '../../hooks/useRememberedEmail';
 import Button from '../../components/ui/Button';
@@ -82,6 +82,13 @@ export default function AdminLogin() {
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? 'Entrando…' : 'Entrar'}
         </Button>
+
+        <p className="mt-6 text-center text-sm text-text-secondary">
+          É uma unidade/loja?{' '}
+          <Link to="/login" className="font-medium text-accent hover:underline">
+            Acessar o Studio
+          </Link>
+        </p>
       </form>
     </div>
   );

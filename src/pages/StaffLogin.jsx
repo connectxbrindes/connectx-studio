@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { useRememberedEmail } from '../hooks/useRememberedEmail';
 import Button from '../components/ui/Button';
@@ -10,6 +10,7 @@ export default function StaffLogin() {
   const { email, setEmail, remember, setRemember, persistEmail } = useRememberedEmail('connectx-studio-email');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isPanelUser, setIsPanelUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isSupabaseConfigured) {
@@ -20,12 +21,24 @@ export default function StaffLogin() {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    setIsSubmitting(false);
+    setIsPanelUser(false);
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     if (signInError) {
+      setIsSubmitting(false);
       setError('E-mail ou senha inválidos.');
       return;
     }
+    // Só unidade (reseller) e master acessam o Studio. Um usuário do painel
+    // (staff) autentica mas não pode entrar aqui — em vez de deixar o guard
+    // "voltar" sem explicação, avisa e manda pro Painel.
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+    if (profile?.role === 'staff') {
+      await supabase.auth.signOut();
+      setIsSubmitting(false);
+      setIsPanelUser(true);
+      return;
+    }
+    setIsSubmitting(false);
     persistEmail(email);
     navigate('/');
   };
@@ -80,9 +93,26 @@ export default function StaffLogin() {
           </p>
         )}
 
+        {isPanelUser && (
+          <div role="alert" className="mb-4 rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-text-primary">
+            Esse login é da equipe de gerenciamento, não do Studio.{' '}
+            <Link to="/admin/login" className="font-semibold text-accent hover:underline">
+              Entrar no Painel
+            </Link>
+            .
+          </div>
+        )}
+
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? 'Entrando…' : 'Entrar'}
         </Button>
+
+        <p className="mt-6 text-center text-sm text-text-secondary">
+          É da equipe de gerenciamento?{' '}
+          <Link to="/admin/login" className="font-medium text-accent hover:underline">
+            Acessar o Painel
+          </Link>
+        </p>
       </form>
     </div>
   );
