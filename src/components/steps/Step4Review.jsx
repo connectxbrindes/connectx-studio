@@ -88,6 +88,9 @@ export default function Step4Review() {
     });
     setIsAdding(false);
     showToast('Adicionado ao carrinho!');
+    // Abre o carrinho na hora — o vendedor já vê o item e finaliza, sem
+    // precisar clicar no ícone do carrinho depois.
+    openDrawer();
   };
 
   const handleContinueShopping = () => {
