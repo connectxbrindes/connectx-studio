@@ -104,7 +104,12 @@ export default function Canvas() {
     <div
       ref={containerRef}
       onMouseDown={(e) => {
-        if (e.target === containerRef.current) selectElement(null);
+        // Desseleciona ao clicar em qualquer lugar que NÃO seja um controle da
+        // moldura (Moveable). O elemento em si faz stopPropagation no seu
+        // próprio mousedown, então clicar nele nunca chega aqui — só o "vazio"
+        // (fora da moldura, incluindo o mockup) cai aqui e desseleciona.
+        if (e.target.closest?.('.moveable-control-box')) return;
+        selectElement(null);
       }}
       // Sem overflow-hidden aqui de propósito: é a partir desta caixa que o
       // Moveable calcula posição dos manípulos de redimensionar/girar — se
@@ -141,14 +146,7 @@ export default function Canvas() {
           />
         )}
 
-        <div
-          className="pointer-events-auto absolute inset-0"
-          onMouseDown={(e) => {
-            // Clicou no vazio do canvas (não num elemento) → desseleciona.
-            // Nos elementos, o onSelect faz stopPropagation, então não cai aqui.
-            if (e.target === e.currentTarget) selectElement(null);
-          }}
-        >
+        <div className="pointer-events-auto absolute inset-0">
           {elements.map((element) => (
             <PersonalizationElement
               key={element.id}
