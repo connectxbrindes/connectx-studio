@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useStore } from '../../store/useStore';
 import Button from '../ui/Button';
 import ProductPreview from '../shared/ProductPreview';
@@ -47,6 +47,26 @@ export default function Step2ChooseVariant() {
     () => catalog.filter((p) => p.category?.id === product.category?.id),
     [catalog, product.category?.id]
   );
+
+  // Modelos da marca selecionada (ou todos, se não há filtro de marca).
+  const modelsForBrand = useMemo(
+    () =>
+      (product.options.models || []).filter((m) => !selectedBrand || m.brandId === selectedBrand.id),
+    [product.options.models, selectedBrand]
+  );
+
+  // Pré-carrega mockup + máscara desses modelos pro cache do navegador — assim
+  // trocar de modelo mostra a prévia na hora, sem o delay de baixar a imagem.
+  useEffect(() => {
+    for (const m of modelsForBrand) {
+      for (const url of [m.mockupImageUrl, m.maskImageUrl]) {
+        if (url) {
+          const img = new Image();
+          img.src = url;
+        }
+      }
+    }
+  }, [modelsForBrand]);
 
   return (
     <section className="grid grid-cols-1 overflow-hidden rounded-2xl lg:grid-cols-2">
@@ -127,9 +147,7 @@ export default function Step2ChooseVariant() {
                 }
                 className="w-full rounded-lg border border-border bg-white px-4 py-4 text-base outline-none transition-colors focus:border-text-primary"
               >
-                {product.options.models
-                  .filter((model) => !selectedBrand || model.brandId === selectedBrand.id)
-                  .map((model) => (
+                {modelsForBrand.map((model) => (
                     <option key={model.id} value={model.id}>
                       {model.name}
                       {isOutOfStock(model) ? ' (Esgotado)' : ''}
