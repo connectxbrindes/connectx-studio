@@ -598,11 +598,11 @@ export async function fetchOrders() {
       id, order_number, sequence_number, customer_name, customer_contact, quantity,
       personalization_fee, unit_price, line_total, status, created_at,
       preview_image_url, original_files_zip_url, art_image_url,
+      reseller_id, reseller_name,
       product:products ( name ),
       color:product_colors ( name ),
       size:product_sizes ( name ),
-      model:brand_models ( name ),
-      reseller:resellers ( id, name, phone )
+      model:brand_models ( name )
     `)
     .order('created_at', { ascending: false });
 

@@ -49,7 +49,7 @@ export default function AdminOrders() {
     if (!shouldNotifyStatus(status)) return;
 
     const { sent, reason } = await notifyOrderStatus(order.id);
-    const unidade = order.reseller?.name || 'a unidade';
+    const unidade = order.reseller_name || 'a unidade';
 
     if (sent) {
       setNotice(`Status atualizado e ${unidade} foi notificada no WhatsApp.`);
@@ -63,12 +63,14 @@ export default function AdminOrders() {
   };
 
   const resellerOptions = Array.from(
-    new Map(orders.filter((o) => o.reseller).map((o) => [o.reseller.id, o.reseller])).values()
+    new Map(
+      orders.filter((o) => o.reseller_id).map((o) => [o.reseller_id, { id: o.reseller_id, name: o.reseller_name || '—' }])
+    ).values()
   ).sort((a, b) => a.name.localeCompare(b.name));
 
   const visibleOrders = orders
     .filter((o) => statusFilter === 'all' || o.status === statusFilter)
-    .filter((o) => resellerFilter === 'all' || o.reseller?.id === resellerFilter);
+    .filter((o) => resellerFilter === 'all' || o.reseller_id === resellerFilter);
 
   const columns = [
     {
@@ -122,7 +124,7 @@ export default function AdminOrders() {
     },
     { key: 'quantity', label: 'Qtd', render: (o) => o.quantity },
     { key: 'line_total', label: 'Total', render: (o) => formatCurrency(Number(o.line_total)) },
-    { key: 'reseller', label: 'Revendedor', render: (o) => o.reseller?.name || '—' },
+    { key: 'reseller', label: 'Revendedor', render: (o) => o.reseller_name || '—' },
     {
       key: 'files',
       label: 'Arquivos',
