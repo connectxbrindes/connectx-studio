@@ -141,7 +141,14 @@ export default function Canvas() {
           />
         )}
 
-        <div className="pointer-events-auto absolute inset-0">
+        <div
+          className="pointer-events-auto absolute inset-0"
+          onMouseDown={(e) => {
+            // Clicou no vazio do canvas (não num elemento) → desseleciona.
+            // Nos elementos, o onSelect faz stopPropagation, então não cai aqui.
+            if (e.target === e.currentTarget) selectElement(null);
+          }}
+        >
           {elements.map((element) => (
             <PersonalizationElement
               key={element.id}
