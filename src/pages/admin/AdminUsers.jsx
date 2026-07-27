@@ -7,6 +7,7 @@ const PERMISSIONS = [
   { value: 'orders', label: 'Pedidos' },
   { value: 'products', label: 'Produtos' },
   { value: 'resellers', label: 'Revendedores' },
+  { value: 'studio', label: 'Studio (prévia)' },
 ];
 
 const permissionLabel = (value) => PERMISSIONS.find((p) => p.value === value)?.label || value;

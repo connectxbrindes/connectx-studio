@@ -10,6 +10,7 @@ import { AdminIndexRedirect, RequirePermission, RequireMaster } from './pages/ad
 import AdminResellers from './pages/admin/AdminResellers';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminOrders from './pages/admin/AdminOrders';
+import AdminStudio from './pages/admin/AdminStudio';
 import ProductsLayout from './pages/admin/products/ProductsLayout';
 import AdminProductsList from './pages/admin/products/AdminProductsList';
 import AdminCategories from './pages/admin/products/AdminCategories';
@@ -81,6 +82,14 @@ function App() {
             <RequireMaster>
               <AdminUsers />
             </RequireMaster>
+          }
+        />
+        <Route
+          path="studio"
+          element={
+            <RequirePermission section="studio">
+              <AdminStudio />
+            </RequirePermission>
           }
         />
       </Route>

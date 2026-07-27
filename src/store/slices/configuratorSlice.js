@@ -32,6 +32,10 @@ export const createConfiguratorSlice = (set) => ({
   quantity: 1,
   elements: [],
   selectedElementId: null,
+  // true quando o fluxo roda como prévia dentro do painel (sem carrinho/pedido).
+  previewMode: false,
+
+  setPreviewMode: (value) => set({ previewMode: value }),
 
   setCatalog: (products) => set(() => {
     const defaultProduct = products.length > 0 ? products[0] : null;

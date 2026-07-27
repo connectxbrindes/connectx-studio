@@ -21,6 +21,7 @@ export default function Step4Review() {
   const openDrawer = useStore((s) => s.openDrawer);
   const resetConfigurator = useStore((s) => s.resetConfigurator);
   const resetWizard = useStore((s) => s.resetWizard);
+  const previewMode = useStore((s) => s.previewMode);
   const { exportNode } = useCanvasExport();
   const previewRef = useRef(null);
   const artRef = useRef(null);
@@ -231,26 +232,47 @@ export default function Step4Review() {
           </div>
         </div>
 
-        <div className="mt-2 flex flex-col gap-3">
-          <Button onClick={handleAddToCart} disabled={isAdding}>
-            {isAdding ? 'Adicionando…' : 'Adicionar ao Carrinho'}
-          </Button>
-          <div className="flex justify-between text-sm">
-            <button type="button" onClick={goBack} className="font-medium text-text-secondary hover:text-text-primary">
-              Voltar
-            </button>
-            <button type="button" onClick={openDrawer} className="font-medium text-text-secondary hover:text-text-primary">
-              Ver carrinho
+        {previewMode ? (
+          // Prévia/teste dentro do painel — sem carrinho nem pedido.
+          <div className="mt-2 flex flex-col gap-3">
+            <p className="rounded-lg border border-border bg-bg px-4 py-3 text-sm text-text-secondary">
+              Prévia de teste — nenhum pedido é criado. Use pra conferir o produto/modelos ou mostrar pro cliente.
+            </p>
+            <div className="flex justify-between text-sm">
+              <button type="button" onClick={goBack} className="font-medium text-text-secondary hover:text-text-primary">
+                Voltar
+              </button>
+              <button
+                type="button"
+                onClick={handleContinueShopping}
+                className="font-medium text-accent hover:underline"
+              >
+                Recomeçar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-2 flex flex-col gap-3">
+            <Button onClick={handleAddToCart} disabled={isAdding}>
+              {isAdding ? 'Adicionando…' : 'Adicionar ao Carrinho'}
+            </Button>
+            <div className="flex justify-between text-sm">
+              <button type="button" onClick={goBack} className="font-medium text-text-secondary hover:text-text-primary">
+                Voltar
+              </button>
+              <button type="button" onClick={openDrawer} className="font-medium text-text-secondary hover:text-text-primary">
+                Ver carrinho
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleContinueShopping}
+              className="text-center text-sm font-medium text-accent hover:underline"
+            >
+              Continuar comprando
             </button>
           </div>
-          <button
-            type="button"
-            onClick={handleContinueShopping}
-            className="text-center text-sm font-medium text-accent hover:underline"
-          >
-            Continuar comprando
-          </button>
-        </div>
+        )}
       </div>
     </section>
   );

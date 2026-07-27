@@ -21,8 +21,14 @@ export default function Storefront() {
   const currentStep = useStore((s) => s.currentStep);
   const catalogLoaded = useStore((s) => s.catalogLoaded);
   const setCatalog = useStore((s) => s.setCatalog);
+  const setPreviewMode = useStore((s) => s.setPreviewMode);
   const StepComponent = STEP_COMPONENTS[currentStep];
   const stepRef = useRef(null);
+
+  // Loja real nunca está em modo prévia (garante que não vazou do painel).
+  useEffect(() => {
+    setPreviewMode(false);
+  }, [setPreviewMode]);
 
   useEffect(() => {
     let mounted = true;

@@ -16,6 +16,7 @@ export default function AdminDashboard() {
     { to: '/admin/pedidos', label: 'Pedidos', show: hasPermission('orders') },
     { to: '/admin/produtos', label: 'Produtos', show: hasPermission('products') },
     { to: '/admin/revendedores', label: 'Revendedores', show: hasPermission('resellers') },
+    { to: '/admin/studio', label: 'Studio', show: hasPermission('studio') },
     // Gestão de usuários é exclusiva do master.
     { to: '/admin/usuarios', label: 'Usuários', show: role === 'master' },
   ].filter((item) => item.show);

@@ -18,7 +18,9 @@ export default function Toolbar() {
       addImageElement(src, img.naturalWidth, img.naturalHeight);
       // O blob: local (src) já basta pro canvas ao vivo — sobe o arquivo
       // original em paralelo, sem travar a edição, só pra guardar a versão
-      // em qualidade máxima que vai no zip do pedido depois.
+      // em qualidade máxima que vai no zip do pedido depois. Na prévia/teste
+      // do painel não há pedido, então não sobe nada (evita arquivo órfão).
+      if (useStore.getState().previewMode) return;
       const newElementId = useStore.getState().selectedElementId;
       uploadOrderOriginalImage(file).then(({ url }) => {
         if (url) updateElement(newElementId, { originalImageUrl: url });
