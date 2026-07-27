@@ -18,6 +18,7 @@ export default function AdminProductModels() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [brandFilter, setBrandFilter] = useState('all');
 
   const loadData = async () => {
     setLoading(true);
@@ -109,6 +110,8 @@ export default function AdminProductModels() {
     },
   ];
 
+  const visibleModels = brandFilter === 'all' ? models : models.filter((m) => m.brand?.id === brandFilter);
+
   return (
     <div className="max-w-3xl">
       <div className="mb-6 flex items-center justify-between">
@@ -118,12 +121,42 @@ export default function AdminProductModels() {
         </Button>
       </div>
 
+      {/* Filtro por marca */}
+      {brands.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setBrandFilter('all')}
+            className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+              brandFilter === 'all' ? 'border-text-primary bg-text-primary text-white' : 'border-border'
+            }`}
+          >
+            Todas ({models.length})
+          </button>
+          {brands.map((b) => {
+            const count = models.filter((m) => m.brand?.id === b.id).length;
+            return (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => setBrandFilter(b.id)}
+                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  brandFilter === b.id ? 'border-text-primary bg-text-primary text-white' : 'border-border'
+                }`}
+              >
+                {b.name} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex h-32 items-center justify-center text-text-secondary">Carregando…</div>
       ) : (
         <DataTable
           columns={columns}
-          rows={models}
+          rows={visibleModels}
           getRowId={(m) => m.id}
           emptyMessage="Nenhum modelo cadastrado. Modelos são vinculados a uma Marca (ex: iPhone 14 para a marca Apple)."
         />
