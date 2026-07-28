@@ -123,8 +123,23 @@ export default function PropertiesPanel() {
         </>
       )}
 
-      <label className="flex flex-col gap-1 text-sm">
-        Rotação ({element.rotation}°)
+      <div className="flex flex-col gap-2 text-sm">
+        <div className="flex items-center justify-between">
+          <span>Rotação</span>
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              step="1"
+              value={Math.round(element.rotation)}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                if (Number.isFinite(v)) updateElement(element.id, { rotation: v });
+              }}
+              className="w-16 rounded-lg border border-border px-2 py-1 text-right outline-none transition-colors focus:border-text-primary"
+            />
+            <span className="text-text-secondary">°</span>
+          </div>
+        </div>
         <input
           type="range"
           min="-180"
@@ -132,7 +147,7 @@ export default function PropertiesPanel() {
           value={element.rotation}
           onChange={(e) => updateElement(element.id, { rotation: Number(e.target.value) })}
         />
-      </label>
+      </div>
     </div>
   );
 }
