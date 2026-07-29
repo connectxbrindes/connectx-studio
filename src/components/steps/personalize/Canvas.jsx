@@ -125,6 +125,9 @@ export default function Canvas() {
   const containerRect = () => containerRef.current.getBoundingClientRect();
 
   const area = product.personalizationArea;
+  // Guia tracejada da área de personalização — desligada temporariamente a
+  // pedido do cliente. Reativar trocando para true.
+  const SHOW_AREA_GUIDE = false;
   // 3 camadas quando o modelo tem mockup: 1) foto do produto (fundo),
   // 2) arte do cliente (meio), 3) máscara por cima de tudo — a parte opaca
   // dela cobre a arte fora da área de personalização (câmera, bordas), a
@@ -169,7 +172,7 @@ export default function Canvas() {
           }`}
         />
 
-        {!maskImageUrl && (
+        {SHOW_AREA_GUIDE && !maskImageUrl && (
           <div
             className="absolute rounded-lg border border-dashed border-accent/50"
             style={{
