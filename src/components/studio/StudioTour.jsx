@@ -29,22 +29,6 @@ const STEPS = [
   { wizard: 4, sel: '[data-tour="carrinho"]', title: 'Finalize o pedido', text: 'No carrinho, preencha o nome do cliente e a observação (se houver) e toque em “Finalizar Compra”. Pronto — o pedido vai para o painel!' },
 ];
 
-function tipStyle(rect) {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const W = Math.min(340, vw - 24);
-  if (!rect) {
-    return { top: vh / 2, left: vw / 2, transform: 'translate(-50%, -50%)', width: W };
-  }
-  const spaceBelow = vh - (rect.top + rect.height);
-  const placeBelow = spaceBelow > 210;
-  const top = placeBelow ? rect.top + rect.height + 14 : Math.max(14, rect.top - 14);
-  const transform = placeBelow ? 'translateX(-50%)' : 'translate(-50%, -100%)';
-  let left = rect.left + rect.width / 2;
-  left = Math.min(Math.max(left, 12 + W / 2), vw - 12 - W / 2);
-  return { top, left, transform, width: W };
-}
-
 export default function StudioTour({ autoOffer = true }) {
   const [phase, setPhase] = useState('hidden'); // 'hidden' | 'offer' | 'tour'
   const [index, setIndex] = useState(0);
@@ -203,7 +187,6 @@ export default function StudioTour({ autoOffer = true }) {
   // phase === 'tour'
   const cfg = STEPS[index];
   const isLast = index === STEPS.length - 1;
-  const tip = tipStyle(rect);
 
   return (
     <>
@@ -225,11 +208,13 @@ export default function StudioTour({ autoOffer = true }) {
         />
       )}
 
+      {/* Card em posição fixa (rodapé central) — não se move entre os passos,
+          só o spotlight muda. Deixa a experiência padronizada e nunca cobre o
+          elemento destacado (que é centralizado na tela pelo scroll). */}
       <div
         role="dialog"
         aria-label="Tutorial do Studio"
-        className="fixed z-[9992] rounded-2xl bg-panel p-5 shadow-2xl"
-        style={{ top: tip.top, left: tip.left, transform: tip.transform, width: tip.width }}
+        className="fixed bottom-4 left-1/2 z-[9992] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl bg-panel p-5 shadow-2xl sm:bottom-6"
       >
         <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-accent">
           {index + 1} de {STEPS.length}
