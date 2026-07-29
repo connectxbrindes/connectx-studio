@@ -61,7 +61,14 @@ Deno.serve(async (req: Request) => {
     }
 
     const { action, resellerId, email, password } = await req.json();
-    if (!resellerId || !password || (action === "create" && !email)) {
+    // Cada ação exige campos diferentes — change_email não tem senha, então
+    // não dá pra exigir password pra todas como era antes.
+    if (
+      !resellerId ||
+      (action === "create" && (!email || !password)) ||
+      (action === "reset_password" && !password) ||
+      (action === "change_email" && !email)
+    ) {
       return json({ error: "Dados incompletos." });
     }
 
@@ -92,6 +99,33 @@ Deno.serve(async (req: Request) => {
       }
       const { error: updateError } = await admin.auth.admin.updateUserById(profile.id, { password });
       if (updateError) return json({ error: updateError.message });
+
+      return json({ ok: true });
+    }
+
+    if (action === "change_email") {
+      const { data: profile, error: findError } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("reseller_id", resellerId)
+        .single();
+      if (findError || !profile) {
+        return json({ error: "Essa unidade ainda não tem login criado." });
+      }
+      // Troca o e-mail no auth (é a credencial de login) e confirma direto,
+      // sem enviar link — mesmo padrão do create. Depois sincroniza o
+      // profiles.email, que é o que o painel exibe.
+      const { error: authError } = await admin.auth.admin.updateUserById(profile.id, {
+        email,
+        email_confirm: true,
+      });
+      if (authError) return json({ error: authError.message });
+
+      const { error: profileError } = await admin
+        .from("profiles")
+        .update({ email })
+        .eq("id", profile.id);
+      if (profileError) return json({ error: profileError.message });
 
       return json({ ok: true });
     }

@@ -34,8 +34,12 @@ export default function AdminResellers() {
   // senão a tela só oferece "redefinir senha" pra um login que não existe.
   const [hasLogin, setHasLogin] = useState(false);
   const [checkingLogin, setCheckingLogin] = useState(false);
-  // E-mail de acesso já cadastrado (vem do profile) — exibido só leitura ao editar.
+  // E-mail de acesso já cadastrado (vem do profile). É a credencial de login
+  // da unidade — editável via ação change_email na Edge Function.
   const [loginEmailExisting, setLoginEmailExisting] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [updatingEmail, setUpdatingEmail] = useState(false);
+  const [emailUpdateDone, setEmailUpdateDone] = useState(false);
 
   useEffect(() => {
     fetchResellers();
@@ -86,6 +90,8 @@ export default function AdminResellers() {
     setPasswordResetDone(false);
     setHasLogin(false);
     setLoginEmailExisting('');
+    setNewEmail('');
+    setEmailUpdateDone(false);
     setIsModalOpen(true);
 
     if (reseller) {
@@ -97,6 +103,7 @@ export default function AdminResellers() {
         .maybeSingle();
       setHasLogin(Boolean(data));
       setLoginEmailExisting(data?.email || '');
+      setNewEmail(data?.email || '');
       setCheckingLogin(false);
     }
   };
@@ -178,6 +185,33 @@ export default function AdminResellers() {
     }
     setResetPassword('');
     setPasswordResetDone(true);
+  };
+
+  const handleUpdateEmail = async () => {
+    const email = newEmail.trim();
+    if (!email) {
+      setLoginError('Informe o novo e-mail de acesso.');
+      return;
+    }
+    if (email === loginEmailExisting) {
+      setLoginError('O e-mail informado é igual ao atual.');
+      return;
+    }
+    setLoginError('');
+    setEmailUpdateDone(false);
+    setUpdatingEmail(true);
+    const { error } = await provisionResellerLogin({
+      action: 'change_email',
+      resellerId: editingId,
+      email,
+    });
+    setUpdatingEmail(false);
+    if (error) {
+      setLoginError(error.message);
+      return;
+    }
+    setLoginEmailExisting(email);
+    setEmailUpdateDone(true);
   };
 
   return (
@@ -353,12 +387,26 @@ export default function AdminResellers() {
               <div className="flex flex-col gap-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-text-secondary">E-mail de acesso</label>
-                  <input
-                    type="email"
-                    value={loginEmailExisting}
-                    readOnly
-                    className="w-full cursor-default rounded-lg border border-border bg-bg px-4 py-2 text-text-secondary outline-none"
-                  />
+                  <div className="flex items-end gap-3">
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent"
+                      placeholder="loja@exemplo.com"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleUpdateEmail}
+                      disabled={updatingEmail || newEmail.trim() === loginEmailExisting}
+                    >
+                      {updatingEmail ? 'Salvando...' : 'Atualizar e-mail'}
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-xs text-text-secondary">
+                    Este é o e-mail com que a unidade acessa o Studio. Alterar aqui muda o login dela.
+                  </p>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-text-secondary">Redefinir senha</label>
@@ -385,6 +433,7 @@ export default function AdminResellers() {
             )}
 
             {loginError && <p className="mt-2 text-sm text-accent">{loginError}</p>}
+            {emailUpdateDone && <p className="mt-2 text-sm text-green-600">E-mail de acesso atualizado.</p>}
             {passwordResetDone && <p className="mt-2 text-sm text-green-600">Senha atualizada.</p>}
           </div>
 
