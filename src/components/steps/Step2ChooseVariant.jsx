@@ -79,7 +79,7 @@ export default function Step2ChooseVariant() {
         className="min-h-[320px] lg:min-h-[560px]"
       />
 
-      <div className="flex flex-col gap-8 bg-panel p-8 sm:p-10">
+      <div data-tour="variacao" className="flex flex-col gap-8 bg-panel p-8 sm:p-10">
         <div className="border-b border-border pb-6">
           <h1 className="text-3xl font-bold">{product.name}</h1>
         </div>

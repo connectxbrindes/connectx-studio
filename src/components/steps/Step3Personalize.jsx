@@ -23,7 +23,7 @@ export default function Step3Personalize() {
         <Canvas />
       </div>
 
-      <div className="flex flex-col gap-8 rounded-2xl border border-border bg-panel p-6">
+      <div data-tour="propriedades" className="flex flex-col gap-8 rounded-2xl border border-border bg-panel p-6">
         <PropertiesPanel />
         <LayerList />
 
@@ -31,7 +31,9 @@ export default function Step3Personalize() {
           <Button variant="secondary" onClick={goBack}>
             Voltar
           </Button>
-          <Button onClick={goNext}>{elements.length > 0 ? 'Próximo' : 'Pular personalização'}</Button>
+          <span data-tour="avancar" className="inline-block">
+            <Button onClick={goNext}>{elements.length > 0 ? 'Próximo' : 'Pular personalização'}</Button>
+          </span>
         </div>
       </div>
     </section>

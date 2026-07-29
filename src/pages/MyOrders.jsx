@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchMyOrders } from '../lib/api';
 import { formatCurrency } from '../utils/price';
 import Header from '../components/layout/Header';
-import StudioTour from '../components/studio/StudioTour';
 
 const STATUS = {
   producing: { label: 'Em produção', className: 'bg-blue-100 text-blue-800' },
@@ -55,12 +54,28 @@ export default function MyOrders() {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const searchRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchMyOrders()
       .then(setOrders)
       .finally(() => setIsLoading(false));
   }, []);
+
+  // O tour interativo roda no Studio (os elementos destacados vivem lá). Aqui
+  // o botão de ajuda "?" leva de volta ao Studio já iniciando o tour.
+  useEffect(() => {
+    const go = () => {
+      try {
+        localStorage.setItem('studio-tour-autostart', '1');
+      } catch {
+        /* ignora */
+      }
+      navigate('/');
+    };
+    window.addEventListener('studio:open-tour', go);
+    return () => window.removeEventListener('studio:open-tour', go);
+  }, [navigate]);
 
   useEffect(() => {
     searchRef.current?.focus();
@@ -298,7 +313,6 @@ export default function MyOrders() {
           </div>
         )}
       </main>
-      <StudioTour autoOffer={false} />
     </div>
   );
 }

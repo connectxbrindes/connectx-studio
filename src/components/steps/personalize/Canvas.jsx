@@ -137,6 +137,7 @@ export default function Canvas() {
   return (
     <div
       ref={containerRef}
+      data-tour="canvas"
       onMouseDown={(e) => {
         // Desseleciona ao clicar em qualquer lugar que NÃO seja um controle da
         // moldura (Moveable). O elemento em si faz stopPropagation no seu

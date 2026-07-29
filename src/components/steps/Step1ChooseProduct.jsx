@@ -33,7 +33,7 @@ export default function Step1ChooseProduct() {
           Nenhum produto disponível no momento.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div data-tour="produto" className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map(({ category, products: categoryProducts }) => {
             const representativeProduct = categoryProducts[0];
             const isSelected = selectedProduct?.category?.id === category.id;

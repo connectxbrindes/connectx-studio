@@ -32,7 +32,7 @@ export default function Toolbar() {
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div data-tour="ferramentas" className="flex items-center gap-3">
       <Button variant="secondary" onClick={addTextElement}>
         + Texto
       </Button>

@@ -93,6 +93,7 @@ export default function Header() {
           )}
           <button
             type="button"
+            data-tour="carrinho"
             onClick={openDrawer}
             aria-label={`Abrir carrinho, ${count} ${count === 1 ? 'item' : 'itens'}`}
             className="relative flex h-11 w-11 items-center justify-center rounded-full border border-border transition-colors hover:border-text-primary"

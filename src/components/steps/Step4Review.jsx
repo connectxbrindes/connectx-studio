@@ -101,7 +101,7 @@ export default function Step4Review() {
 
   return (
     <section className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_420px]">
-      <div className="flex flex-col items-center gap-4 rounded-2xl bg-panel p-10 shadow-sm">
+      <div data-tour="previa" className="flex flex-col items-center gap-4 rounded-2xl bg-panel p-10 shadow-sm">
         {product.hasViewer3d && (
           <div className="flex w-fit rounded-lg border border-border p-1">
             <button
@@ -253,7 +253,7 @@ export default function Step4Review() {
           </div>
         ) : (
           <div className="mt-2 flex flex-col gap-3">
-            <Button onClick={handleAddToCart} disabled={isAdding}>
+            <Button data-tour="add-carrinho" onClick={handleAddToCart} disabled={isAdding}>
               {isAdding ? 'Adicionando…' : 'Adicionar ao Carrinho'}
             </Button>
             <div className="flex justify-between text-sm">
