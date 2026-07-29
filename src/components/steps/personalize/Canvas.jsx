@@ -22,6 +22,30 @@ export default function Canvas() {
     setTargetEl(selectedElementId ? elementNodes.current[selectedElementId] || null : null);
   }, [selectedElementId, elements]);
 
+  useEffect(() => {
+    if (!selectedElementId) return undefined;
+
+    const handleDocumentMouseDown = (e) => {
+      // Ignora se o clique foi dentro do próprio canvas (já é tratado no onMouseDown do container)
+      if (containerRef.current?.contains(e.target)) return;
+
+      // Ignora se clicou em um botão (ex: Toolbar, ou botões de remover/voltar/próximo)
+      if (e.target.closest('button')) return;
+
+      // Ignora se clicou em inputs, textareas ou selects (PropertiesPanel)
+      if (e.target.closest('input, textarea, select')) return;
+
+      // Ignora se clicou em qualquer lugar dentro do painel lateral (PropertiesPanel / LayerList)
+      if (e.target.closest('.bg-panel')) return;
+
+      // Se clicou no fundo "vazio" da página, desseleciona
+      selectElement(null);
+    };
+
+    document.addEventListener('mousedown', handleDocumentMouseDown);
+    return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
+  }, [selectedElementId, selectElement]);
+
   const selectedElement = elements.find((el) => el.id === selectedElementId);
   // Marca quando a próxima mudança de x/y/width/height/rotation já veio de
   // um gesto da própria Moveable (drag/resize/rotate end) — nesses casos ela
@@ -116,7 +140,7 @@ export default function Canvas() {
       // ela recortasse o conteúdo, os manípulos sumiam quando a arte chegava
       // perto da borda, tirando espaço de edição do cliente.
       className={`relative ${
-        hasModelMockup ? 'mx-auto h-[600px] aspect-[331/590]' : 'h-[480px] w-full'
+        hasModelMockup ? 'mx-auto h-[600px] aspect-[331/590]' : 'h-[560px] w-full'
       }`}
     >
       <div
@@ -130,7 +154,7 @@ export default function Canvas() {
           alt={product.name}
           draggable={false}
           className={`absolute inset-0 object-contain ${
-            hasModelMockup ? 'h-full w-full' : 'm-auto max-h-[80%] max-w-[80%]'
+            hasModelMockup ? 'h-full w-full' : 'm-auto max-h-[92%] max-w-[92%]'
           }`}
         />
 

@@ -22,13 +22,18 @@ export default function Storefront() {
   const catalogLoaded = useStore((s) => s.catalogLoaded);
   const setCatalog = useStore((s) => s.setCatalog);
   const setPreviewMode = useStore((s) => s.setPreviewMode);
+  const resetWizard = useStore((s) => s.resetWizard);
   const StepComponent = STEP_COMPONENTS[currentStep];
   const stepRef = useRef(null);
 
-  // Loja real nunca está em modo prévia (garante que não vazou do painel).
+  // Ao entrar no Studio (ex: voltando de "Meus Pedidos"), começa do Passo 1 —
+  // sem isso, o currentStep ficava no valor antigo (ex: Revisão) enquanto o
+  // produto era resetado, dando aquela tela em branco. E garante que não está
+  // em modo prévia (não vazou do painel).
   useEffect(() => {
     setPreviewMode(false);
-  }, [setPreviewMode]);
+    resetWizard();
+  }, [setPreviewMode, resetWizard]);
 
   useEffect(() => {
     let mounted = true;

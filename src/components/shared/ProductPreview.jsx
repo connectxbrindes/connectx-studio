@@ -31,7 +31,7 @@ const ProductPreview = forwardRef(function ProductPreview(
           alt={product.name}
           draggable={false}
           className={`pointer-events-none absolute inset-0 object-contain ${
-            hasModelMockup ? 'h-full w-full' : 'm-auto max-h-[80%] max-w-[80%]'
+            hasModelMockup ? 'h-full w-full' : 'm-auto max-h-[92%] max-w-[92%]'
           }`}
         />
       )}
