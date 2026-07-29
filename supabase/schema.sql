@@ -362,6 +362,9 @@ alter table orders add column if not exists art_image_url text;
 -- "Carimbo" do nome da unidade no pedido — exibe no painel sem depender de
 -- RLS/join na tabela de revendedores (staff de pedidos não lê resellers).
 alter table orders add column if not exists reseller_name text;
+-- Observação livre que o cliente/unidade escreve ao finalizar — aparece em
+-- "Meus Pedidos" e no painel, pra produção ver qualquer instrução do pedido.
+alter table orders add column if not exists customer_note text;
 
 create or replace function place_order(order_rows jsonb)
 returns void
@@ -376,11 +379,11 @@ begin
   for row_data in select * from jsonb_array_elements(order_rows) loop
     v_reseller_id := nullif(row_data->>'reseller_id','')::uuid;
     insert into orders (
-      customer_name, customer_contact, reseller_id, reseller_name, product_id, color_id, size_id, model_id,
+      customer_name, customer_contact, customer_note, reseller_id, reseller_name, product_id, color_id, size_id, model_id,
       quantity, personalization_snapshot, personalization_fee, unit_price, line_total,
       preview_image_url, original_files_zip_url, art_image_url
     ) values (
-      row_data->>'customer_name', row_data->>'customer_contact',
+      row_data->>'customer_name', row_data->>'customer_contact', row_data->>'customer_note',
       v_reseller_id, (select name from resellers where id = v_reseller_id),
       nullif(row_data->>'product_id','')::uuid,
       nullif(row_data->>'color_id','')::uuid, nullif(row_data->>'size_id','')::uuid,

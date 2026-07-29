@@ -123,6 +123,21 @@ export default function AdminOrders() {
         [o.product?.name, o.color?.name, o.size?.name, o.model?.name].filter(Boolean).join(' · ') || '—',
     },
     { key: 'quantity', label: 'Qtd', render: (o) => o.quantity },
+    {
+      key: 'customer_note',
+      label: 'Observação',
+      render: (o) =>
+        o.customer_note ? (
+          <span
+            title={o.customer_note}
+            className="block max-w-[16rem] whitespace-pre-wrap break-words rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-800"
+          >
+            {o.customer_note}
+          </span>
+        ) : (
+          <span className="text-text-secondary">—</span>
+        ),
+    },
     { key: 'line_total', label: 'Total', render: (o) => formatCurrency(Number(o.line_total)) },
     { key: 'reseller', label: 'Revendedor', render: (o) => o.reseller_name || '—' },
     {

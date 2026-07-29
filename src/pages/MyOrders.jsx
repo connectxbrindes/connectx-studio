@@ -261,6 +261,11 @@ export default function MyOrders() {
                           </div>
                           <p className="font-medium text-text-primary">{o.customer_name}</p>
                           <p className="truncate text-xs text-text-secondary">{productLine(o)}</p>
+                          {o.customer_note && (
+                            <p className="mt-1 rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                              <span className="font-semibold">Obs.:</span> {o.customer_note}
+                            </p>
+                          )}
                         </div>
 
                         {/* Total + hora */}

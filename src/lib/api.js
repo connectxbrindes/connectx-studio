@@ -595,7 +595,7 @@ export async function fetchOrders() {
   const { data, error } = await supabaseAdmin
     .from('orders')
     .select(`
-      id, order_number, sequence_number, customer_name, customer_contact, quantity,
+      id, order_number, sequence_number, customer_name, customer_contact, customer_note, quantity,
       personalization_fee, unit_price, line_total, status, created_at,
       preview_image_url, original_files_zip_url, art_image_url,
       reseller_id, reseller_name,
@@ -621,7 +621,7 @@ export async function fetchMyOrders() {
   const { data, error } = await supabase
     .from('orders')
     .select(`
-      id, order_number, sequence_number, customer_name, customer_contact, quantity,
+      id, order_number, sequence_number, customer_name, customer_contact, customer_note, quantity,
       line_total, status, created_at, preview_image_url,
       product:products ( name ),
       color:product_colors ( name ),
@@ -710,6 +710,7 @@ export async function submitOrders(cartItems, customer) {
       return {
         customer_name: customer.name,
         customer_contact: customer.contact || null,
+        customer_note: customer.note || null,
         reseller_id: customer.resellerId || null,
         product_id: item.productId,
         color_id: item.colorId || null,

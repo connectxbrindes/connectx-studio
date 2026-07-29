@@ -20,12 +20,13 @@ export default function CartDrawer() {
 
   const [customerName, setCustomerName] = useState('');
   const [customerContact, setCustomerContact] = useState('');
+  const [customerNote, setCustomerNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const handleCheckout = async () => {
     if (!customerName.trim()) {
-      setError('Informe seu nome para finalizar o pedido.');
+      setError('Informe o nome do cliente para finalizar o pedido.');
       return;
     }
     setError('');
@@ -33,6 +34,7 @@ export default function CartDrawer() {
     const { error: submitError } = await submitOrders(items, {
       name: customerName.trim(),
       contact: customerContact.trim(),
+      note: customerNote.trim(),
       resellerId: identity?.resellerId || null,
     });
     setIsSubmitting(false);
@@ -45,6 +47,7 @@ export default function CartDrawer() {
     clearCart();
     setCustomerName('');
     setCustomerContact('');
+    setCustomerNote('');
     closeDrawer();
     // Volta pra tela de escolher produto (Passo 1), pronta pra um pedido
     // novo — sem isso, o cliente ficava preso no produto/personalização do
@@ -154,7 +157,7 @@ export default function CartDrawer() {
           {items.length > 0 && (
             <div className="mb-4 flex flex-col gap-3">
               <label className="flex flex-col gap-1 text-sm">
-                Seu nome
+                Nome do cliente
                 <input
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
@@ -167,6 +170,16 @@ export default function CartDrawer() {
                   value={customerContact}
                   onChange={(e) => setCustomerContact(e.target.value)}
                   className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-text-primary"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                Observação
+                <textarea
+                  value={customerNote}
+                  onChange={(e) => setCustomerNote(e.target.value)}
+                  rows={2}
+                  placeholder="Alguma observação sobre este pedido? (opcional)"
+                  className="resize-none rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-text-primary placeholder:text-text-secondary"
                 />
               </label>
               {error && <p className="text-sm text-accent">{error}</p>}
