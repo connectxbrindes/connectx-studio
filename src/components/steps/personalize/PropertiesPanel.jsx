@@ -2,7 +2,7 @@ import { useStore } from '../../../store/useStore';
 import InfoHint from '../../ui/InfoHint';
 
 const DEFAULT_TEXT = 'Seu texto aqui';
-const FONT_SIZES = [14, 16, 20, 24, 32, 40, 48];
+const FONT_SIZES = [14, 16, 20, 24, 32, 40, 48, 56, 64, 72, 80, 90, 100];
 const FONT_FAMILIES = [
   { value: "'Amsi Pro Cond', sans-serif", label: 'Amsi Pro Cond' },
   { value: "'Bakerie Smooth', sans-serif", label: 'Bakerie Smooth' },

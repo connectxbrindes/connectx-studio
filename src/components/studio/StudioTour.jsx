@@ -26,7 +26,7 @@ const STEPS = [
   { wizard: 3, sel: '[data-tour="avancar"]', title: 'Avance para a revisão', text: 'Quando a arte estiver pronta, toque em “Próximo”.' },
   { wizard: 4, sel: '[data-tour="previa"]', title: 'Passo 4 · Revisão', text: 'Confira a prévia final do produto personalizado antes de fechar o pedido.' },
   { wizard: 4, sel: '[data-tour="add-carrinho"]', title: 'Adicione ao carrinho', text: 'Toque em “Adicionar ao Carrinho”. O carrinho abre automaticamente para finalizar.' },
-  { wizard: 4, sel: '[data-tour="carrinho"]', title: 'Finalize o pedido', text: 'No carrinho, preencha o nome do cliente e a observação (se houver) e toque em “Finalizar Compra”. Pronto — o pedido vai para o painel!' },
+  { wizard: 4, sel: '[data-tour="carrinho"]', title: 'Finalize o pedido', text: 'No carrinho, preencha o nome do cliente e a observação (se houver) e toque em “Finalizar Compra”. Pronto, o seu pedido foi para a linha de produção!' },
 ];
 
 export default function StudioTour({ autoOffer = true }) {
