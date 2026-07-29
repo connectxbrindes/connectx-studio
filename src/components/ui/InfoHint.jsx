@@ -50,7 +50,7 @@ export default function InfoHint({ text, label, align = 'center' }) {
       {open && (
         <span
           role="tooltip"
-          className={`absolute top-6 z-50 w-56 max-w-[70vw] rounded-lg border border-border bg-panel px-3 py-2 text-xs font-normal normal-case leading-relaxed tracking-normal text-text-secondary shadow-lg ${position}`}
+          className={`absolute top-6 z-[1100] w-56 max-w-[70vw] rounded-lg border border-border bg-panel px-3 py-2 text-xs font-normal normal-case leading-relaxed tracking-normal text-text-secondary shadow-lg ${position}`}
         >
           {text}
         </span>
