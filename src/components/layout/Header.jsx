@@ -36,6 +36,17 @@ export default function Header() {
         </Link>
         <div className="flex items-center gap-4">
           {identityLabel && (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event('studio:open-tour'))}
+              aria-label="Ajuda e tutorial do Studio"
+              title="Como usar o Studio"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-sm font-bold text-text-secondary transition-colors hover:border-accent hover:text-accent"
+            >
+              ?
+            </button>
+          )}
+          {identityLabel && (
             <div className="relative" ref={menuRef}>
               <button
                 type="button"

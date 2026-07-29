@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchMyOrders } from '../lib/api';
 import { formatCurrency } from '../utils/price';
 import Header from '../components/layout/Header';
+import StudioTour from '../components/studio/StudioTour';
 
 const STATUS = {
   producing: { label: 'Em produção', className: 'bg-blue-100 text-blue-800' },
@@ -297,6 +298,7 @@ export default function MyOrders() {
           </div>
         )}
       </main>
+      <StudioTour autoOffer={false} />
     </div>
   );
 }

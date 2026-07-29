@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useStore } from '../../../store/useStore';
 import { uploadOrderOriginalImage } from '../../../lib/api';
 import Button from '../../ui/Button';
+import InfoHint from '../../ui/InfoHint';
 
 export default function Toolbar() {
   const addTextElement = useStore((s) => s.addTextElement);
@@ -31,13 +32,15 @@ export default function Toolbar() {
   };
 
   return (
-    <div className="flex gap-3">
+    <div className="flex items-center gap-3">
       <Button variant="secondary" onClick={addTextElement}>
         + Texto
       </Button>
+      <InfoHint label="Adicionar texto" align="left" text="Cria uma caixa de texto no produto. Depois é só digitar no campo 'Conteúdo' e ajustar fonte, cor e tamanho no painel à direita." />
       <Button variant="secondary" onClick={() => fileInputRef.current.click()}>
         + Imagem
       </Button>
+      <InfoHint label="Adicionar imagem" align="left" text="Envia uma foto ou logo do seu dispositivo. Depois arraste para posicionar e use os cantos para redimensionar sobre o produto." />
       <input
         ref={fileInputRef}
         type="file"

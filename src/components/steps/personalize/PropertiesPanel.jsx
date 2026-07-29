@@ -1,4 +1,5 @@
 import { useStore } from '../../../store/useStore';
+import InfoHint from '../../ui/InfoHint';
 
 const DEFAULT_TEXT = 'Seu texto aqui';
 const FONT_SIZES = [14, 16, 20, 24, 32, 40, 48];
@@ -47,7 +48,13 @@ export default function PropertiesPanel() {
       {element.type === 'text' && (
         <>
           <label className="flex flex-col gap-1 text-sm">
-            Conteúdo
+            <span className="flex items-center gap-1.5">
+              Conteúdo
+              <InfoHint
+                label="Conteúdo"
+                text="Digite aqui o texto que vai aparecer no produto. Ao clicar, o texto de exemplo some e você já começa a escrever."
+              />
+            </span>
             <textarea
               value={element.content}
               onChange={(e) => updateElement(element.id, { content: e.target.value })}
@@ -67,7 +74,13 @@ export default function PropertiesPanel() {
           </label>
 
           <div className="flex flex-col gap-1 text-sm">
-            Fonte
+            <span className="flex items-center gap-1.5">
+              Fonte
+              <InfoHint
+                label="Fonte"
+                text="Escolha o estilo da letra. Cada botão 'Aa' mostra uma prévia da fonte. Toque numa opção para aplicar ao texto."
+              />
+            </span>
             <div className="grid grid-cols-3 gap-2">
               {FONT_FAMILIES.map(({ value, label }) => (
                 <button
@@ -89,7 +102,10 @@ export default function PropertiesPanel() {
           </div>
 
           <label className="flex flex-col gap-1 text-sm">
-            Tamanho da fonte
+            <span className="flex items-center gap-1.5">
+              Tamanho da fonte
+              <InfoHint label="Tamanho da fonte" text="Deixa o texto maior ou menor. Você também pode redimensionar arrastando os cantos da caixa sobre o produto." />
+            </span>
             <select
               value={element.fontSize}
               onChange={(e) => updateElement(element.id, { fontSize: Number(e.target.value) })}
@@ -104,7 +120,10 @@ export default function PropertiesPanel() {
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
-            Cor
+            <span className="flex items-center gap-1.5">
+              Cor
+              <InfoHint label="Cor" text="Escolha a cor do texto. Toque no quadro colorido e selecione a cor desejada." />
+            </span>
             <input
               type="color"
               value={element.color}
@@ -114,7 +133,10 @@ export default function PropertiesPanel() {
           </label>
 
           <div className="flex flex-col gap-1 text-sm">
-            Alinhamento
+            <span className="flex items-center gap-1.5">
+              Alinhamento
+              <InfoHint label="Alinhamento" text="Alinha o texto à esquerda, ao centro ou à direita — útil quando o texto tem mais de uma linha." />
+            </span>
             <div className="flex gap-2">
               {ALIGNMENTS.map(({ value, label }) => (
                 <button
@@ -136,7 +158,10 @@ export default function PropertiesPanel() {
 
       <div className="flex flex-col gap-2 text-sm">
         <div className="flex items-center justify-between">
-          <span>Rotação</span>
+          <span className="flex items-center gap-1.5">
+            Rotação
+            <InfoHint label="Rotação" text="Gira o elemento. Digite o ângulo (em graus) ou use a barra deslizante. Também dá pra girar pela alça redonda acima da caixa no produto." />
+          </span>
           <div className="flex items-center gap-1">
             <input
               type="number"

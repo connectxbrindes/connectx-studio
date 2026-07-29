@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import Header from '../components/layout/Header';
 import StepIndicator from '../components/layout/StepIndicator';
 import CartDrawer from '../components/layout/CartDrawer';
+import StudioTour from '../components/studio/StudioTour';
 import Toast from '../components/ui/Toast';
 import Step1ChooseProduct from '../components/steps/Step1ChooseProduct';
 import Step2ChooseVariant from '../components/steps/Step2ChooseVariant';
@@ -72,6 +73,7 @@ export default function Storefront() {
         )}
       </main>
       <CartDrawer />
+      <StudioTour />
       <Toast />
     </div>
   );
