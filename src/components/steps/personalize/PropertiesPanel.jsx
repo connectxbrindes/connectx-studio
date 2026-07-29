@@ -1,5 +1,6 @@
 import { useStore } from '../../../store/useStore';
 
+const DEFAULT_TEXT = 'Seu texto aqui';
 const FONT_SIZES = [14, 16, 20, 24, 32, 40, 48];
 const FONT_FAMILIES = [
   { value: "'Amsi Pro Cond', sans-serif", label: 'Amsi Pro Cond' },
@@ -50,8 +51,18 @@ export default function PropertiesPanel() {
             <textarea
               value={element.content}
               onChange={(e) => updateElement(element.id, { content: e.target.value })}
+              // Ao focar, limpa o texto padrão pra o cliente já começar a
+              // digitar direto. Se sair sem escrever nada, restaura o padrão
+              // pra não ficar uma caixa de texto invisível na prévia.
+              onFocus={() => {
+                if (element.content === DEFAULT_TEXT) updateElement(element.id, { content: '' });
+              }}
+              onBlur={() => {
+                if (element.content.trim() === '') updateElement(element.id, { content: DEFAULT_TEXT });
+              }}
               rows={2}
-              className="resize-none rounded-lg border border-border px-3 py-2"
+              placeholder={DEFAULT_TEXT}
+              className="resize-none rounded-lg border border-border px-3 py-2 placeholder:text-text-secondary"
             />
           </label>
 

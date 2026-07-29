@@ -80,7 +80,17 @@ export default function Canvas() {
     if (!selectedElementId) return undefined;
 
     const handleKeyDown = (e) => {
-      if (document.activeElement?.isContentEditable) return;
+      // Não intercepta teclas de edição quando o foco está num campo de
+      // texto (ex: caixa "Conteúdo" do painel) — senão Delete/Backspace
+      // apagavam o elemento inteiro em vez de editar o texto.
+      const ae = document.activeElement;
+      if (
+        ae?.isContentEditable ||
+        ae?.tagName === 'INPUT' ||
+        ae?.tagName === 'TEXTAREA' ||
+        ae?.tagName === 'SELECT'
+      )
+        return;
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
