@@ -127,7 +127,11 @@ export default function Step4Review() {
         )}
 
         <div className="relative flex w-full items-center justify-center">
-          <div className={viewMode === '2d' ? '' : 'hidden'}>
+          {/* w-full aqui é essencial: sem largura definida, a prévia sem
+              mockup (térmicos) colapsa pra 0 de largura (a imagem é absolute,
+              não segura o container). Produtos com mockup têm largura própria
+              (aspect-ratio) e ficam centralizados pelo mx-auto interno. */}
+          <div className={`w-full ${viewMode === '2d' ? '' : 'hidden'}`}>
             <ProductPreview
               ref={previewRef}
               product={product}
