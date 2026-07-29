@@ -43,7 +43,7 @@ export default function PersonalizationElement({ element, isSelected, registerRe
             outline: 'none',
           }}
         >
-          {element.content}
+          {element.content?.trim() ? element.content : 'Seu texto aqui'}
         </span>
       </div>
     );

@@ -61,7 +61,7 @@ const ProductPreview = forwardRef(function ProductPreview(
                   width: '100%',
                 }}
               >
-                {element.content}
+                {element.content?.trim() ? element.content : 'Seu texto aqui'}
               </span>
             ) : (
               <img

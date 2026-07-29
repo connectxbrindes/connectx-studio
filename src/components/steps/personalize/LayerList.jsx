@@ -27,7 +27,9 @@ export default function LayerList() {
               }`}
             >
               <span aria-hidden="true">{el.type === 'text' ? '🔤' : '🖼️'}</span>
-              <span className="truncate">{el.type === 'text' ? el.content : 'Imagem'}</span>
+              <span className="truncate">
+                {el.type === 'text' ? el.content?.trim() || 'Seu texto aqui' : 'Imagem'}
+              </span>
             </button>
           </li>
         ))}
