@@ -155,7 +155,7 @@ export default function Step2ChooseVariant() {
                 {modelsForBrand.map((model) => (
                     <option key={model.id} value={model.id}>
                       {model.name}
-                      {isOutOfStock(model) ? ' (Esgotado)' : model.stockQuantity != null ? ` - ${model.stockQuantity} un` : ''}
+                      {isOutOfStock(model) ? ' (Esgotado)' : ''}
                     </option>
                   ))}
               </select>
