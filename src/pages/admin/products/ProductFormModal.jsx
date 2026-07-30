@@ -147,8 +147,8 @@ function ColorListEditor({ items, onChange }) {
                   <input
                     type="text"
                     value={item.bling_sku}
-                    onChange={(e) => updateItem(index, { bling_sku: e.target.value })}
-                    placeholder="código no Olist/Tiny"
+                    onChange={(e) => updateItem(index, { bling_sku: e.target.value.toUpperCase().replace(/\s+/g, '') })}
+                    placeholder="ex: IPHONE11"
                     className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
                   />
                 </div>
@@ -242,8 +242,8 @@ function VariantListEditor({ items, onChange, allBrandModels }) {
                 <input
                   type="text"
                   value={item.blingSku || ''}
-                  onChange={(e) => updateItem(index, { blingSku: e.target.value })}
-                  placeholder="código no Olist/Tiny"
+                  onChange={(e) => updateItem(index, { blingSku: e.target.value.toUpperCase().replace(/\s+/g, '') })}
+                  placeholder="ex: IPHONE11"
                   className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
                 />
               </div>
