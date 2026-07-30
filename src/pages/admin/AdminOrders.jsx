@@ -82,7 +82,7 @@ export default function AdminOrders() {
             <img
               src={o.preview_image_url}
               alt={`Prévia do pedido ${formatOrderNumber(o)}`}
-              className="h-14 w-14 rounded-lg border border-border object-cover"
+              className="h-14 w-14 rounded-lg border border-border object-contain"
             />
           </a>
         ) : (
