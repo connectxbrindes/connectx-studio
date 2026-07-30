@@ -143,12 +143,12 @@ function ColorListEditor({ items, onChange }) {
                   />
                 </div>
                 <div>
-                  <span className="mb-1 block text-xs text-text-secondary">SKU Bling</span>
+                  <span className="mb-1 block text-xs text-text-secondary">SKU Olist/Tiny</span>
                   <input
                     type="text"
                     value={item.bling_sku}
                     onChange={(e) => updateItem(index, { bling_sku: e.target.value })}
-                    placeholder="código no Bling"
+                    placeholder="código no Olist/Tiny"
                     className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
                   />
                 </div>
@@ -238,12 +238,12 @@ function VariantListEditor({ items, onChange, allBrandModels }) {
                 />
               </div>
               <div>
-                <span className="mb-1 block text-xs text-text-secondary">SKU Bling</span>
+                <span className="mb-1 block text-xs text-text-secondary">SKU Olist/Tiny</span>
                 <input
                   type="text"
                   value={item.blingSku || ''}
                   onChange={(e) => updateItem(index, { blingSku: e.target.value })}
-                  placeholder="código no Bling"
+                  placeholder="código no Olist/Tiny"
                   className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
                 />
               </div>
