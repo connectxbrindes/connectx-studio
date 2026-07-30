@@ -137,8 +137,13 @@ export default function Step2ChooseVariant() {
             )}
 
             <div>
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+              <h3 className="mb-4 flex items-center text-sm font-semibold uppercase tracking-wide text-text-secondary">
                 Modelo do Aparelho
+                {selectedModel?.stockQuantity > 0 && (
+                  <span className="ml-3 inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 normal-case">
+                    {selectedModel.stockQuantity} em estoque
+                  </span>
+                )}
               </h3>
               <select
                 value={selectedModel?.id || ''}
@@ -150,7 +155,7 @@ export default function Step2ChooseVariant() {
                 {modelsForBrand.map((model) => (
                     <option key={model.id} value={model.id}>
                       {model.name}
-                      {isOutOfStock(model) ? ' (Esgotado)' : ''}
+                      {isOutOfStock(model) ? ' (Esgotado)' : model.stockQuantity != null ? ` - ${model.stockQuantity} un` : ''}
                     </option>
                   ))}
               </select>
@@ -162,8 +167,13 @@ export default function Step2ChooseVariant() {
         )}
 
         <div>
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+          <h3 className="mb-4 flex items-center text-sm font-semibold uppercase tracking-wide text-text-secondary">
             Cor <span className="ml-2 font-medium normal-case text-text-primary">{selectedColor.name}</span>
+            {selectedColor?.stockQuantity > 0 && (
+              <span className="ml-3 inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 normal-case">
+                {selectedColor.stockQuantity} em estoque
+              </span>
+            )}
           </h3>
           <div className="flex gap-4">
             {product.options.colors.map((color) => {
@@ -173,7 +183,7 @@ export default function Step2ChooseVariant() {
                   key={color.id}
                   type="button"
                   aria-label={out ? `${color.name} (esgotado)` : color.name}
-                  title={out ? `${color.name} — esgotado` : color.name}
+                  title={out ? `${color.name} — esgotado` : color.stockQuantity != null ? `${color.name} — ${color.stockQuantity} un` : color.name}
                   aria-pressed={selectedColor.id === color.id}
                   onClick={() => selectColor(color)}
                   style={{ backgroundColor: color.hex }}
