@@ -336,6 +336,10 @@ export default function Step4Review() {
               Este produto com a mesma personalização já se encontra no seu carrinho.
               Deseja adicionar novamente?
             </p>
+            <p className="mb-6 flex items-center gap-2 rounded-lg bg-bg px-4 py-3 text-center text-xs leading-relaxed text-text-secondary">
+              <span className="text-base">🛒</span>
+              Para acessar seu pedido, clique no ícone do carrinho no canto superior direito da tela.
+            </p>
 
             <div className="flex gap-3">
               <button
