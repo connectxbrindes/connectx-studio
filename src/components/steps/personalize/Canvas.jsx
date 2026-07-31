@@ -158,13 +158,14 @@ export default function Canvas() {
       }`}
     >
       <div
-        className={`pointer-events-none absolute inset-0 overflow-hidden rounded-2xl shadow-sm transition-colors duration-500 ${
+        className={`pointer-events-none absolute inset-0 overflow-hidden rounded-2xl shadow-sm transition-colors duration-500 isolate ${
           hasModelMockup ? 'bg-white' : color?.image ? 'bg-panel' : ''
         }`}
         style={hasModelMockup || color?.image ? undefined : { backgroundColor: color.hex }}
       >
         <img
           src={backgroundImage}
+          crossOrigin="anonymous"
           alt={product.name}
           draggable={false}
           className={`absolute inset-0 object-contain ${
@@ -184,7 +185,7 @@ export default function Canvas() {
           />
         )}
 
-        <div className="pointer-events-auto absolute inset-0">
+        <div className="pointer-events-auto absolute inset-0" style={{ zIndex: 10 }}>
           {elements.map((element) => (
             <PersonalizationElement
               key={element.id}
@@ -202,10 +203,11 @@ export default function Canvas() {
         {maskImageUrl && (
           <img
             src={maskImageUrl}
+            crossOrigin="anonymous"
             alt=""
             draggable={false}
             className="absolute inset-0 h-full w-full object-contain"
-            style={{ zIndex: 1000 }}
+            style={{ zIndex: 9999 }}
           />
         )}
       </div>

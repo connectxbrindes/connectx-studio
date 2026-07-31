@@ -18,7 +18,7 @@ const ProductPreview = forwardRef(function ProductPreview(
   return (
     <div
       ref={ref}
-      className={`relative flex items-center justify-center transition-colors duration-500 ${
+      className={`relative z-0 transition-colors duration-500 ${
         hasModelMockup
           ? `mx-auto aspect-[331/590] ${bare ? 'h-full' : `${heightClass} overflow-hidden rounded-xl`}`
           : `w-full ${bare ? 'h-full' : `${heightClass} overflow-hidden rounded-xl`}`
@@ -28,6 +28,7 @@ const ProductPreview = forwardRef(function ProductPreview(
       {!artOnly && (
         <img
           src={backgroundImage}
+          crossOrigin="anonymous"
           alt={product.name}
           draggable={false}
           className={`pointer-events-none absolute inset-0 object-contain ${
@@ -35,7 +36,7 @@ const ProductPreview = forwardRef(function ProductPreview(
           }`}
         />
       )}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0" style={{ zIndex: 10 }}>
         {elements.map((element) => (
           <div
             key={element.id}
@@ -66,6 +67,7 @@ const ProductPreview = forwardRef(function ProductPreview(
             ) : (
               <img
                 src={element.src}
+                crossOrigin="anonymous"
                 alt="Elemento de personalização"
                 draggable={false}
                 className="h-full w-full object-fill"
@@ -78,10 +80,11 @@ const ProductPreview = forwardRef(function ProductPreview(
       {maskImageUrl && !artOnly && (
         <img
           src={maskImageUrl}
+          crossOrigin="anonymous"
           alt=""
           draggable={false}
           className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-          style={{ zIndex: 1000 }}
+          style={{ zIndex: 50 }}
         />
       )}
     </div>

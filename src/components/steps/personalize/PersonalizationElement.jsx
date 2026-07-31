@@ -53,6 +53,7 @@ export default function PersonalizationElement({ element, isSelected, registerRe
     <img
       ref={ref}
       src={element.src}
+      crossOrigin="anonymous"
       alt="Elemento de personalização"
       onMouseDown={onSelect}
       draggable={false}
