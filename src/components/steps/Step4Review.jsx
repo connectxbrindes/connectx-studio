@@ -330,24 +330,20 @@ export default function Step4Review() {
             </div>
 
             <h3 className="mb-2 text-center text-lg font-bold text-text-primary">
-              Produto já no carrinho
+              Produto já adicionado
             </h3>
             <p className="mb-6 text-center text-sm leading-relaxed text-text-secondary">
-              Este produto com a mesma personalização já se encontra no seu carrinho.
-              Deseja adicionar novamente?
-            </p>
-            <p className="mb-6 flex items-center gap-2 rounded-lg bg-bg px-4 py-3 text-center text-xs leading-relaxed text-text-secondary">
-              <span className="text-base">🛒</span>
-              Para acessar seu pedido, clique no ícone do carrinho no canto superior direito da tela.
+              Este item com a mesma personalização já está no seu carrinho.
+              O que você deseja fazer?
             </p>
 
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={handleCancelDuplicate}
+                onClick={() => { setShowDuplicateModal(false); openDrawer(); }}
                 className="flex-1 rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-bg"
               >
-                Não, cancelar
+                Ir para o carrinho
               </button>
               <button
                 type="button"
@@ -355,7 +351,7 @@ export default function Step4Review() {
                 disabled={isAdding}
                 className="flex-1 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
               >
-                {isAdding ? 'Adicionando…' : 'Sim, adicionar'}
+                {isAdding ? 'Adicionando…' : 'Adicionar mais um'}
               </button>
             </div>
           </div>
