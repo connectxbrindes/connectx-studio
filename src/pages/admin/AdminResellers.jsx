@@ -4,9 +4,14 @@ import { provisionResellerLogin } from '../../lib/api';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 
+// Só dígitos — pra comparar CNPJ/CPF ignorando pontuação (./-).
+const onlyDigits = (s) => (s || '').replace(/\D/g, '');
+
 export default function AdminResellers() {
   const [resellers, setResellers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [togglingId, setTogglingId] = useState(null);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,6 +19,7 @@ export default function AdminResellers() {
   const [formData, setFormData] = useState({
     name: '',
     contact_name: '',
+    cnpj_cpf: '',
     phone: '',
     email: '',
     commission_rate: 0,
@@ -67,6 +73,7 @@ export default function AdminResellers() {
       setFormData({
         name: reseller.name,
         contact_name: reseller.contact_name || '',
+        cnpj_cpf: reseller.cnpj_cpf || '',
         phone: reseller.phone || '',
         email: reseller.email || '',
         commission_rate: reseller.commission_rate,
@@ -77,6 +84,7 @@ export default function AdminResellers() {
       setFormData({
         name: '',
         contact_name: '',
+        cnpj_cpf: '',
         phone: '',
         email: '',
         commission_rate: 0,
@@ -122,6 +130,7 @@ export default function AdminResellers() {
     const payload = {
       name: formData.name,
       contact_name: formData.contact_name,
+      cnpj_cpf: formData.cnpj_cpf || null,
       phone: formData.phone,
       email: formData.email,
       commission_rate: parseFloat(formData.commission_rate),
@@ -214,11 +223,47 @@ export default function AdminResellers() {
     setEmailUpdateDone(true);
   };
 
+  // Ativa/desativa direto na lista, sem abrir o modal.
+  const toggleStatus = async (reseller) => {
+    const next = reseller.status === 'active' ? 'inactive' : 'active';
+    setTogglingId(reseller.id);
+    // Atualização otimista pra dar fluidez; reverte se der erro.
+    setResellers((prev) => prev.map((r) => (r.id === reseller.id ? { ...r, status: next } : r)));
+    const { error } = await supabaseAdmin.from('resellers').update({ status: next }).eq('id', reseller.id);
+    setTogglingId(null);
+    if (error) {
+      setResellers((prev) => prev.map((r) => (r.id === reseller.id ? { ...r, status: reseller.status } : r)));
+      alert('Erro ao mudar o status do revendedor.');
+    }
+  };
+
+  // Filtro por CNPJ/CPF (ignora pontuação) ou nome.
+  const term = search.trim().toLowerCase();
+  const termDigits = onlyDigits(search);
+  const filteredResellers = term
+    ? resellers.filter((r) => {
+        const byName = (r.name || '').toLowerCase().includes(term) ||
+          (r.contact_name || '').toLowerCase().includes(term);
+        const byDoc = termDigits && onlyDigits(r.cnpj_cpf).includes(termDigits);
+        return byName || byDoc;
+      })
+    : resellers;
+
   return (
     <div className="max-w-5xl">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <h2 className="text-3xl font-bold">Revendedores</h2>
         <Button onClick={() => openModal()}>Novo Revendedor</Button>
+      </div>
+
+      <div className="mb-4">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por CNPJ/CPF ou nome…"
+          className="w-full max-w-md rounded-lg border border-border bg-panel px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
+        />
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-panel shadow-sm">
@@ -227,6 +272,7 @@ export default function AdminResellers() {
             <thead className="bg-bg text-text-secondary border-b border-border">
               <tr>
                 <th className="px-6 py-4 font-semibold uppercase tracking-wider">Nome</th>
+                <th className="px-6 py-4 font-semibold uppercase tracking-wider">CNPJ / CPF</th>
                 <th className="px-6 py-4 font-semibold uppercase tracking-wider">Contato</th>
                 <th className="px-6 py-4 font-semibold uppercase tracking-wider">Comissão (%)</th>
                 <th className="px-6 py-4 font-semibold uppercase tracking-wider">Status</th>
@@ -236,37 +282,46 @@ export default function AdminResellers() {
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-text-secondary">
+                  <td colSpan="6" className="px-6 py-8 text-center text-text-secondary">
                     <div className="flex justify-center">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
                     </div>
                   </td>
                 </tr>
-              ) : resellers.length === 0 ? (
+              ) : filteredResellers.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-text-secondary">
-                    Nenhum revendedor cadastrado.
+                  <td colSpan="6" className="px-6 py-8 text-center text-text-secondary">
+                    {resellers.length === 0
+                      ? 'Nenhum revendedor cadastrado.'
+                      : 'Nenhum revendedor encontrado para esse filtro.'}
                   </td>
                 </tr>
               ) : (
-                resellers.map((reseller) => (
+                filteredResellers.map((reseller) => (
                   <tr key={reseller.id} className="transition-colors hover:bg-bg/50">
                     <td className="px-6 py-4 font-medium">{reseller.name}</td>
+                    <td className="px-6 py-4 text-text-secondary">{reseller.cnpj_cpf || '—'}</td>
                     <td className="px-6 py-4 text-text-secondary">
                       {reseller.contact_name}
                       {reseller.phone && <div className="text-xs">{reseller.phone}</div>}
                     </td>
                     <td className="px-6 py-4">{Number(reseller.commission_rate).toFixed(1)}%</td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      {/* Toggle rápido: clica pra ativar/desativar sem abrir o modal. */}
+                      <button
+                        type="button"
+                        onClick={() => toggleStatus(reseller)}
+                        disabled={togglingId === reseller.id}
+                        title="Clique para ativar/desativar"
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors disabled:opacity-50 ${
                           reseller.status === 'active'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                            ? 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400'
                         }`}
                       >
+                        <span className={`h-1.5 w-1.5 rounded-full ${reseller.status === 'active' ? 'bg-green-600' : 'bg-red-600'}`} />
                         {reseller.status === 'active' ? 'Ativo' : 'Inativo'}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
@@ -303,6 +358,16 @@ export default function AdminResellers() {
           </div>
           
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-text-secondary">CNPJ / CPF</label>
+              <input
+                type="text"
+                value={formData.cnpj_cpf}
+                onChange={(e) => setFormData({ ...formData, cnpj_cpf: e.target.value })}
+                className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent"
+                placeholder="Documento do cliente"
+              />
+            </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-text-secondary">Nome do Contato</label>
               <input

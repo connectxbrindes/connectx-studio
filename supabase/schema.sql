@@ -524,3 +524,9 @@ alter table product_model_variants add column if not exists bling_sku text;
 -- modelo e é herdado pela variante ao vincular o modelo a um produto.
 alter table brand_models add column if not exists bling_sku text;
 
+-- Revendedores: documento (CNPJ/CPF) e vínculo com a ficha de cliente do
+-- Olist/Tiny (tiny_id) para o import automático dos clientes.
+alter table resellers add column if not exists cnpj_cpf text;
+alter table resellers add column if not exists tiny_id text;
+create index if not exists resellers_tiny_id_idx on resellers (tiny_id);
+
