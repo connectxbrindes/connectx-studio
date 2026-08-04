@@ -3,18 +3,19 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 // Sincronização de estoque PUXANDO da API do Tiny (direção nós → Tiny).
 //
-// Como o "push" (webhook) do Tiny não dispara nessa integração, aqui nós
-// consultamos a API do Tiny e atualizamos o nosso estoque:
+// Consulta APENAS os SKUs que temos cadastrados (um a um, com pausa entre as
+// chamadas pra respeitar o rate limit da API v2 do Tiny) e atualiza:
 //   - product_model_variants.stock_quantity (capas, por produto+modelo)
 //   - product_colors.stock_quantity          (térmicos, por produto+cor)
-// O casamento é por SKU (bling_sku) IGNORANDO caixa (ilike) — o Tiny pode
-// mandar minúsculo (iphone11) e nós guardamos maiúsculo (IPHONE11).
+// Casa por SKU (bling_sku) IGNORANDO caixa (ilike) — o Tiny pode mandar
+// minúsculo (iphone11) e nós guardamos maiúsculo (IPHONE11).
 //
-// Requer o secret TINY_API_TOKEN (token da API do Tiny — gerado em
-// Configurações → Tokens de API). Na 1ª rodada, loga a resposta crua da
-// primeira página pra confirmarmos o formato e ajustar se preciso.
+// Requer o secret TINY_API_TOKEN (Configurações → Tokens de API no Tiny).
 
 const TINY_API = "https://api.tiny.com.br/api2";
+const DELAY_MS = 900; // pausa entre chamadas — respeita o limite do Tiny
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -34,71 +35,94 @@ Deno.serve(async () => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // SKUs que temos cadastrados (capas por modelo + térmicos por cor).
   const [{ data: variants }, { data: colors }] = await Promise.all([
     supabase.from("product_model_variants").select("bling_sku").not("bling_sku", "is", null),
     supabase.from("product_colors").select("bling_sku").not("bling_sku", "is", null),
   ]);
-  const wanted = new Set(
-    [...(variants ?? []), ...(colors ?? [])]
-      .map((r) => (r.bling_sku ?? "").trim().toUpperCase())
-      .filter(Boolean)
-  );
-  if (wanted.size === 0) return json({ ok: true, message: "Nenhum SKU cadastrado." });
+  const skus = [
+    ...new Set(
+      [...(variants ?? []), ...(colors ?? [])]
+        .map((r) => (r.bling_sku ?? "").trim().toUpperCase())
+        .filter(Boolean)
+    ),
+  ];
+  if (skus.length === 0) return json({ ok: true, message: "Nenhum SKU cadastrado." });
 
-  const obterSaldo = async (id: string): Promise<number | null> => {
-    const url = `${TINY_API}/produto.obter.estoque.php?token=${token}&id=${id}&formato=json`;
-    const res = await fetch(url).then((r) => r.json()).catch(() => null);
-    const saldo = res?.retorno?.produto?.saldo;
-    return saldo === undefined || saldo === null ? null : Number(saldo);
-  };
+  // Detecta o bloqueio por rate limit do Tiny (codigo_erro 6).
+  const isRateLimited = (retorno: any) =>
+    Number(retorno?.codigo_erro) === 6 ||
+    JSON.stringify(retorno?.erros ?? "").toLowerCase().includes("bloquead");
 
-  let pagina = 1;
-  let numeroPaginas = 1;
-  let atualizados = 0;
-  const naoEncontrados = new Set(wanted);
-  const amostras: Array<{ codigo: string; saldo: number }> = [];
+  const atualizados: Array<{ sku: string; saldo: number }> = [];
+  const naoEncontrados: string[] = [];
+  let rateLimited = false;
+  let logouAmostra = false;
 
-  do {
-    const url = `${TINY_API}/produtos.pesquisa.php?token=${token}&formato=json&pagina=${pagina}`;
+  for (const sku of skus) {
+    const url = `${TINY_API}/produtos.pesquisa.php?token=${token}&formato=json&pesquisa=${encodeURIComponent(sku)}`;
     const res = await fetch(url).then((r) => r.json()).catch((e) => ({ erro: String(e) }));
+    const retorno = (res as { retorno?: any })?.retorno;
 
-    if (pagina === 1) {
-      console.log("TINY_PRODUTOS_PESQUISA_P1:", JSON.stringify(res).slice(0, 1800));
+    if (!logouAmostra) {
+      console.log("TINY_PESQUISA_AMOSTRA:", sku, JSON.stringify(res).slice(0, 1500));
+      logouAmostra = true;
     }
 
-    const retorno = (res as { retorno?: Record<string, unknown> })?.retorno;
-    if (!retorno || retorno.status !== "OK") {
-      return json({ error: "Falha na API do Tiny (verifique o token/plano).", detalhe: retorno ?? res });
+    if (isRateLimited(retorno)) {
+      rateLimited = true;
+      break; // para na hora; o que já sincronizou fica salvo
     }
 
-    numeroPaginas = Number(retorno.numero_paginas ?? 1);
-    const produtos = (retorno.produtos as Array<{ produto?: Record<string, unknown> }>) ?? [];
+    const produtos = (retorno?.produtos as Array<{ produto?: any }>) ?? [];
+    const match = produtos
+      .map((it) => it.produto ?? it)
+      .find((p) => String(p?.codigo ?? "").trim().toUpperCase() === sku);
 
-    for (const item of produtos) {
-      const p = item.produto ?? item;
-      const codigo = String(p.codigo ?? "").trim().toUpperCase();
-      if (!codigo || !wanted.has(codigo)) continue;
+    if (!match) {
+      naoEncontrados.push(sku);
+      await sleep(DELAY_MS);
+      continue;
+    }
 
-      // Saldo pode vir na própria pesquisa; se não, busca pelo id do produto.
-      let saldo: number | null =
-        p.saldo !== undefined && p.saldo !== null ? Number(p.saldo) : null;
-      if (saldo === null && p.id) saldo = await obterSaldo(String(p.id));
-      if (saldo === null || Number.isNaN(saldo)) continue; // sem saldo confiável: não mexe
+    let saldo: number | null =
+      match.saldo !== undefined && match.saldo !== null ? Number(match.saldo) : null;
 
+    // Se a pesquisa não trouxe saldo, busca pelo id do produto.
+    if (saldo === null && match.id) {
+      await sleep(DELAY_MS);
+      const est = await fetch(
+        `${TINY_API}/produto.obter.estoque.php?token=${token}&id=${match.id}&formato=json`
+      )
+        .then((r) => r.json())
+        .catch(() => null);
+      if (isRateLimited(est?.retorno)) {
+        rateLimited = true;
+        break;
+      }
+      const s = est?.retorno?.produto?.saldo;
+      saldo = s === undefined || s === null ? null : Number(s);
+    }
+
+    if (saldo !== null && !Number.isNaN(saldo)) {
       await Promise.all([
-        supabase.from("product_model_variants").update({ stock_quantity: saldo }).ilike("bling_sku", codigo),
-        supabase.from("product_colors").update({ stock_quantity: saldo }).ilike("bling_sku", codigo),
+        supabase.from("product_model_variants").update({ stock_quantity: saldo }).ilike("bling_sku", sku),
+        supabase.from("product_colors").update({ stock_quantity: saldo }).ilike("bling_sku", sku),
       ]);
-      atualizados++;
-      naoEncontrados.delete(codigo);
-      if (amostras.length < 15) amostras.push({ codigo, saldo });
+      atualizados.push({ sku, saldo });
+    } else {
+      naoEncontrados.push(sku);
     }
 
-    pagina++;
-  } while (pagina <= numeroPaginas && pagina <= 60);
+    await sleep(DELAY_MS);
+  }
 
-  const resumo = { atualizados, nao_encontrados: [...naoEncontrados], amostras };
+  const resumo = {
+    ok: true,
+    total_skus: skus.length,
+    atualizados,
+    nao_encontrados: naoEncontrados,
+    rate_limited: rateLimited,
+  };
   console.log("TINY_SYNC_RESUMO:", JSON.stringify(resumo));
-  return json({ ok: true, ...resumo });
+  return json(resumo);
 });
