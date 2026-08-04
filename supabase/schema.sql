@@ -519,3 +519,8 @@ alter table product_colors add column if not exists stock_quantity int;
 alter table product_colors add column if not exists bling_sku text;
 alter table product_model_variants add column if not exists bling_sku text;
 
+-- SKU (Olist/Tiny) por Modelo — código do aparelho no ERP, derivado do nome
+-- em maiúsculo e sem espaço (ex: "Poco C85" -> "POCOC85"). Fica no próprio
+-- modelo e é herdado pela variante ao vincular o modelo a um produto.
+alter table brand_models add column if not exists bling_sku text;
+

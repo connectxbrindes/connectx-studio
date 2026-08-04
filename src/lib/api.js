@@ -220,7 +220,7 @@ export async function fetchAllBrandModels() {
   if (!isSupabaseConfigured) return [];
   const { data, error } = await supabaseAdmin
     .from('brand_models')
-    .select('id, name, mockup_image_url, mask_image_url, brand:brands ( id, name )')
+    .select('id, name, mockup_image_url, mask_image_url, bling_sku, brand:brands ( id, name )')
     .order('name');
   if (error) {
     console.error('Error fetching brand models:', error);
@@ -233,8 +233,8 @@ export async function saveBrandModel(modelId, payload) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase não configurado') };
 
   const query = modelId
-    ? supabaseAdmin.from('brand_models').update(payload).eq('id', modelId).select('id, name, mockup_image_url, mask_image_url, brand:brands ( id, name )').single()
-    : supabaseAdmin.from('brand_models').insert(payload).select('id, name, mockup_image_url, mask_image_url, brand:brands ( id, name )').single();
+    ? supabaseAdmin.from('brand_models').update(payload).eq('id', modelId).select('id, name, mockup_image_url, mask_image_url, bling_sku, brand:brands ( id, name )').single()
+    : supabaseAdmin.from('brand_models').insert(payload).select('id, name, mockup_image_url, mask_image_url, bling_sku, brand:brands ( id, name )').single();
 
   const { data, error } = await query;
   if (error) console.error('Error saving brand model:', error);

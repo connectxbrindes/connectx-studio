@@ -5,8 +5,12 @@ import Modal from '../../../components/ui/Modal';
 import DataTable from '../../../components/admin/DataTable';
 import ImageUploader from '../../../components/admin/ImageUploader';
 
+// SKU no padrão Olist/Tiny: nome do modelo em maiúsculo e sem espaços
+// (ex: "Poco C85" -> "POCOC85").
+const deriveSku = (name) => (name || '').toUpperCase().replace(/\s+/g, '');
+
 function emptyForm() {
-  return { brandId: '', name: '', mockupImageUrl: '', maskImageUrl: '' };
+  return { brandId: '', name: '', blingSku: '', mockupImageUrl: '', maskImageUrl: '' };
 }
 
 export default function AdminProductModels() {
@@ -19,6 +23,9 @@ export default function AdminProductModels() {
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
   const [brandFilter, setBrandFilter] = useState('all');
+  // Enquanto false, o SKU acompanha o nome automaticamente; vira true quando o
+  // usuário edita o SKU à mão (aí paramos de sobrescrever).
+  const [skuTouched, setSkuTouched] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -36,15 +43,18 @@ export default function AdminProductModels() {
 
   const openCreateModal = () => {
     setEditingId(null);
+    setSkuTouched(false);
     setForm({ ...emptyForm(), brandId: brands[0]?.id || '' });
     setIsModalOpen(true);
   };
 
   const openEditModal = (model) => {
     setEditingId(model.id);
+    setSkuTouched(true); // já tem SKU salvo; não sobrescreve ao mexer no nome
     setForm({
       brandId: model.brand?.id || '',
       name: model.name,
+      blingSku: model.bling_sku || deriveSku(model.name),
       mockupImageUrl: model.mockup_image_url || '',
       maskImageUrl: model.mask_image_url || '',
     });
@@ -58,6 +68,7 @@ export default function AdminProductModels() {
     const { error } = await saveBrandModel(editingId, {
       brand_id: form.brandId,
       name: form.name,
+      bling_sku: (form.blingSku || deriveSku(form.name)) || null,
       mockup_image_url: form.mockupImageUrl || null,
       mask_image_url: form.maskImageUrl || null,
     });
@@ -185,10 +196,32 @@ export default function AdminProductModels() {
               type="text"
               required
               value={form.name}
-              onChange={(e) => updateField({ name: e.target.value })}
+              onChange={(e) => {
+                const name = e.target.value;
+                // Enquanto o SKU não foi editado à mão, ele acompanha o nome.
+                updateField(skuTouched ? { name } : { name, blingSku: deriveSku(name) });
+              }}
               className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent"
               placeholder="Ex: iPhone 15 Pro"
             />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-secondary">SKU Olist/Tiny</label>
+            <input
+              type="text"
+              value={form.blingSku}
+              onChange={(e) => {
+                setSkuTouched(true);
+                updateField({ blingSku: e.target.value.toUpperCase().replace(/\s+/g, '') });
+              }}
+              className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent"
+              placeholder="ex: IPHONE15PRO"
+            />
+            <p className="mt-1 text-xs text-text-secondary">
+              Preenchido automaticamente pelo nome (maiúsculo, sem espaço). É o código deste aparelho no
+              Olist/Tiny — herdado ao vincular o modelo a um produto.
+            </p>
           </div>
 
           <div className="rounded-lg border border-border p-3">

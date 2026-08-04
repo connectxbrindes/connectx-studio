@@ -198,7 +198,8 @@ function VariantListEditor({ items, onChange, allBrandModels }) {
         brandName: bm.brand?.name || '',
         modelName: bm.name,
         stockQuantity: 0,
-        blingSku: '',
+        // Herda o SKU do modelo (auto). Fallback: deriva do nome (maiúsc/sem espaço).
+        blingSku: bm.bling_sku || (bm.name || '').toUpperCase().replace(/\s+/g, ''),
       },
     ]);
     setSelectedToAdd('');
