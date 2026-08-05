@@ -529,4 +529,8 @@ alter table brand_models add column if not exists bling_sku text;
 alter table resellers add column if not exists cnpj_cpf text;
 alter table resellers add column if not exists tiny_id text;
 create index if not exists resellers_tiny_id_idx on resellers (tiny_id);
+-- Tipo do contato no Tiny: 'cliente' | 'outro' (fornecedor/etc.) | null (não
+-- classificado / manual). A aba Revendedores só exibe 'cliente' e os manuais.
+alter table resellers add column if not exists tiny_tipo text;
+create index if not exists resellers_tiny_tipo_idx on resellers (tiny_tipo);
 

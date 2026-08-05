@@ -3,6 +3,7 @@ import { supabaseAdmin } from '../../lib/supabaseClient';
 import { provisionResellerLogin } from '../../lib/api';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
+import * as XLSX from 'xlsx';
 
 // Só dígitos — pra comparar CNPJ/CPF ignorando pontuação (./-).
 const onlyDigits = (s) => (s || '').replace(/\D/g, '');
@@ -53,11 +54,14 @@ export default function AdminResellers() {
 
   const fetchResellers = async () => {
     setLoading(true);
+    // Esconde os contatos do Tiny que NÃO são "Cliente" (tiny_tipo='outro').
+    // Mostra: manuais (tiny_tipo null) + clientes + ainda não classificados.
     const { data, error } = await supabaseAdmin
       .from('resellers')
       .select('*')
+      .or('tiny_tipo.is.null,tiny_tipo.eq.cliente')
       .order('name');
-    
+
     if (error) {
       console.error('Error fetching resellers:', error);
       alert('Erro ao carregar revendedores');
@@ -237,6 +241,60 @@ export default function AdminResellers() {
     }
   };
 
+  // ---------- Exportar Excel ----------
+  const exportToExcel = () => {
+    if (resellers.length === 0) {
+      alert('Nenhum revendedor para exportar.');
+      return;
+    }
+
+    const columnMap = {
+      id: 'ID',
+      name: 'Nome',
+      contact_name: 'Nome do Contato',
+      cnpj_cpf: 'CNPJ / CPF',
+      phone: 'Telefone / WhatsApp',
+      email: 'E-mail',
+      commission_rate: 'Comissão (%)',
+      status: 'Status',
+      notes: 'Observações',
+      tiny_id: 'Tiny ID (ERP)',
+      created_at: 'Criado em',
+    };
+
+    const statusLabels = { active: 'Ativo', inactive: 'Inativo' };
+
+    const rows = resellers.map((r) => {
+      const row = {};
+      for (const [key, label] of Object.entries(columnMap)) {
+        let value = r[key];
+        if (key === 'status') value = statusLabels[value] || value;
+        if (key === 'created_at' && value) {
+          value = new Date(value).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        }
+        row[label] = value ?? '';
+      }
+      // Colunas extras que existam no banco mas não no map
+      for (const key of Object.keys(r)) {
+        if (!columnMap[key]) row[key] = r[key] ?? '';
+      }
+      return row;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+
+    // Auto-ajustar largura das colunas
+    const colWidths = Object.keys(rows[0]).map((key) => {
+      const maxLen = Math.max(key.length, ...rows.map((row) => String(row[key] || '').length));
+      return { wch: Math.min(maxLen + 2, 50) };
+    });
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Revendedores');
+    XLSX.writeFile(wb, 'revendedores_export.xlsx');
+  };
+
   // Filtro por CNPJ/CPF (ignora pontuação) ou nome.
   const term = search.trim().toLowerCase();
   const termDigits = onlyDigits(search);
@@ -253,7 +311,12 @@ export default function AdminResellers() {
     <div className="max-w-5xl">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-3xl font-bold">Revendedores</h2>
-        <Button onClick={() => openModal()}>Novo Revendedor</Button>
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" onClick={exportToExcel}>
+            📊 Exportar Excel
+          </Button>
+          <Button onClick={() => openModal()}>Novo Revendedor</Button>
+        </div>
       </div>
 
       <div className="mb-4">
