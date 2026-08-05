@@ -12,6 +12,7 @@ export default function AdminResellers() {
   const [resellers, setResellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
   const [togglingId, setTogglingId] = useState(null);
 
   // Modal state
@@ -295,17 +296,23 @@ export default function AdminResellers() {
     XLSX.writeFile(wb, 'revendedores_export.xlsx');
   };
 
-  // Filtro por CNPJ/CPF (ignora pontuação) ou nome.
+  // Contadores por status (sobre todos os carregados, não sobre o filtro).
+  const totalAtivos = resellers.filter((r) => r.status === 'active').length;
+  const totalInativos = resellers.length - totalAtivos;
+
+  // Filtro por CNPJ/CPF (ignora pontuação) ou nome + filtro de status.
   const term = search.trim().toLowerCase();
   const termDigits = onlyDigits(search);
-  const filteredResellers = term
-    ? resellers.filter((r) => {
-        const byName = (r.name || '').toLowerCase().includes(term) ||
-          (r.contact_name || '').toLowerCase().includes(term);
-        const byDoc = termDigits && onlyDigits(r.cnpj_cpf).includes(termDigits);
-        return byName || byDoc;
-      })
-    : resellers;
+  const matchesSearch = (r) => {
+    if (!term) return true;
+    const byName = (r.name || '').toLowerCase().includes(term) ||
+      (r.contact_name || '').toLowerCase().includes(term);
+    const byDoc = termDigits && onlyDigits(r.cnpj_cpf).includes(termDigits);
+    return byName || byDoc;
+  };
+  const filteredResellers = resellers.filter(
+    (r) => matchesSearch(r) && (statusFilter === 'all' || r.status === statusFilter)
+  );
 
   return (
     <div className="max-w-5xl">
@@ -327,6 +334,30 @@ export default function AdminResellers() {
           placeholder="Buscar por CNPJ/CPF ou nome…"
           className="w-full max-w-md rounded-lg border border-border bg-panel px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
         />
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {[
+          { key: 'all', label: 'Todos', n: resellers.length },
+          { key: 'active', label: 'Ativos', n: totalAtivos },
+          { key: 'inactive', label: 'Inativos', n: totalInativos },
+        ].map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setStatusFilter(f.key)}
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+              statusFilter === f.key
+                ? 'border-text-primary bg-text-primary text-white'
+                : 'border-border hover:border-text-primary'
+            }`}
+          >
+            {f.label} ({f.n})
+          </button>
+        ))}
+        <span className="ml-auto text-sm text-text-secondary">
+          {filteredResellers.length} exibido{filteredResellers.length === 1 ? '' : 's'}
+        </span>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-panel shadow-sm">
