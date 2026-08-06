@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchMyOrders } from '../lib/api';
+import { fetchMyOrders, cancelOrder } from '../lib/api';
 import { formatCurrency } from '../utils/price';
 import Header from '../components/layout/Header';
+import Modal from '../components/ui/Modal';
+import Button from '../components/ui/Button';
 
 const STATUS = {
   producing: { label: 'Em produção', className: 'bg-blue-100 text-blue-800' },
@@ -55,6 +57,28 @@ export default function MyOrders() {
   const [dateFilter, setDateFilter] = useState('');
   const searchRef = useRef(null);
   const navigate = useNavigate();
+
+  // Cancelamento pela unidade (com motivo obrigatório).
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelReasonInput, setCancelReasonInput] = useState('');
+  const [cancelSaving, setCancelSaving] = useState(false);
+
+  const confirmCancel = async () => {
+    if (!cancelTarget || !cancelReasonInput.trim()) return;
+    const reason = cancelReasonInput.trim();
+    setCancelSaving(true);
+    const { error } = await cancelOrder(cancelTarget.id, reason);
+    setCancelSaving(false);
+    if (error) {
+      alert(`Não foi possível cancelar: ${error.message}`);
+      return;
+    }
+    setOrders((prev) =>
+      prev.map((o) => (o.id === cancelTarget.id ? { ...o, status: 'canceled', cancel_reason: reason } : o))
+    );
+    setCancelTarget(null);
+    setCancelReasonInput('');
+  };
 
   useEffect(() => {
     fetchMyOrders()
@@ -282,6 +306,11 @@ export default function MyOrders() {
                               <span className="font-semibold">Obs.:</span> {o.customer_note}
                             </p>
                           )}
+                          {o.status === 'canceled' && o.cancel_reason && (
+                            <p className="mt-1 rounded-lg bg-red-50 px-2 py-1 text-xs text-red-700">
+                              <span className="font-semibold">Motivo do cancelamento:</span> {o.cancel_reason}
+                            </p>
+                          )}
                         </div>
 
                         {/* Total + hora */}
@@ -293,17 +322,31 @@ export default function MyOrders() {
                           </span>
                         </div>
 
-                        {/* Ação */}
-                        {o.preview_image_url && (
-                          <a
-                            href={o.preview_image_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex-shrink-0 rounded-xl bg-text-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                          >
-                            Ver prévia
-                          </a>
-                        )}
+                        {/* Ações */}
+                        <div className="flex flex-shrink-0 flex-col gap-2">
+                          {o.preview_image_url && (
+                            <a
+                              href={o.preview_image_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-xl bg-text-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                            >
+                              Ver prévia
+                            </a>
+                          )}
+                          {(o.status === 'pending' || o.status === 'producing') && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCancelReasonInput('');
+                                setCancelTarget(o);
+                              }}
+                              className="rounded-xl border border-red-300 px-4 py-2.5 text-center text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                        </div>
                       </article>
                     );
                   })}
@@ -313,6 +356,32 @@ export default function MyOrders() {
           </div>
         )}
       </main>
+
+      <Modal
+        isOpen={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        title="Cancelar pedido"
+      >
+        <p className="mb-3 text-sm text-text-secondary">
+          Pedido <span className="font-semibold text-text-primary">{cancelTarget ? formatOrderNumber(cancelTarget) : ''}</span> — conte o motivo do cancelamento.
+        </p>
+        <textarea
+          value={cancelReasonInput}
+          onChange={(e) => setCancelReasonInput(e.target.value)}
+          rows={3}
+          autoFocus
+          placeholder="Ex: cliente desistiu, erro na arte, mudou de ideia…"
+          className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
+        />
+        <div className="mt-4 flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setCancelTarget(null)}>
+            Voltar
+          </Button>
+          <Button onClick={confirmCancel} disabled={cancelSaving || !cancelReasonInput.trim()}>
+            {cancelSaving ? 'Cancelando…' : 'Confirmar cancelamento'}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

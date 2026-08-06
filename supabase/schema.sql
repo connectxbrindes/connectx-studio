@@ -446,6 +446,40 @@ alter table orders alter column status set default 'producing';
 drop policy if exists "orders reseller read own" on orders;
 create policy "orders reseller read own" on orders for select using (reseller_id = current_reseller_id());
 
+-- Cancelamento com motivo: a unidade não tem UPDATE em orders, então cancela
+-- via esta função (security definer) que valida se o pedido é dela (ou master)
+-- e grava status='canceled' + cancel_reason. Não cancela pedido já concluído.
+alter table orders add column if not exists cancel_reason text;
+
+create or replace function cancel_order(p_order_id uuid, p_reason text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_reseller uuid;
+  v_status text;
+  v_found boolean;
+begin
+  select reseller_id, status, true into v_reseller, v_status, v_found
+  from orders where id = p_order_id;
+  if not coalesce(v_found, false) then
+    raise exception 'Pedido não encontrado';
+  end if;
+  if not (is_master() or v_reseller = current_reseller_id()) then
+    raise exception 'Sem permissão para cancelar este pedido';
+  end if;
+  if v_status = 'completed' then
+    raise exception 'Pedido já concluído não pode ser cancelado';
+  end if;
+  update orders set status = 'canceled', cancel_reason = nullif(btrim(p_reason), '')
+   where id = p_order_id;
+end;
+$$;
+
+grant execute on function cancel_order(uuid, text) to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Usuários do Painel: papel "staff" com permissões por seção
 -- ---------------------------------------------------------------------------

@@ -596,7 +596,7 @@ export async function fetchOrders() {
     .from('orders')
     .select(`
       id, order_number, sequence_number, customer_name, customer_contact, customer_note, quantity,
-      personalization_fee, unit_price, line_total, status, created_at,
+      personalization_fee, unit_price, line_total, status, cancel_reason, created_at,
       preview_image_url, original_files_zip_url, art_image_url,
       reseller_id, reseller_name,
       product:products ( name ),
@@ -622,7 +622,7 @@ export async function fetchMyOrders() {
     .from('orders')
     .select(`
       id, order_number, sequence_number, customer_name, customer_contact, customer_note, quantity,
-      line_total, status, created_at, preview_image_url,
+      line_total, status, cancel_reason, created_at, preview_image_url,
       product:products ( name ),
       color:product_colors ( name ),
       size:product_sizes ( name ),
@@ -646,7 +646,7 @@ export async function fetchProductionReport(fromISO, toISO, status = 'completed'
   let query = supabaseAdmin
     .from('orders')
     .select(`
-      sequence_number, order_number, created_at, quantity, line_total, status,
+      sequence_number, order_number, created_at, quantity, line_total, status, cancel_reason,
       customer_name, customer_note, reseller_name,
       product:products ( name, category:categories ( id, name ), subcategory:subcategories ( category:categories ( id, name ) ) ),
       color:product_colors ( name ), size:product_sizes ( name ), model:brand_models ( name )
@@ -665,10 +665,23 @@ export async function fetchProductionReport(fromISO, toISO, status = 'completed'
   return data;
 }
 
-export async function updateOrderStatus(orderId, status) {
+export async function updateOrderStatus(orderId, status, cancelReason) {
   if (!isSupabaseConfigured) return { error: new Error('Supabase não configurado') };
-  const { error } = await supabaseAdmin.from('orders').update({ status }).eq('id', orderId);
+  const payload = { status };
+  // Ao cancelar, grava o motivo; ao sair de "cancelado" pra outro status, limpa.
+  if (status === 'canceled') payload.cancel_reason = (cancelReason || '').trim() || null;
+  else payload.cancel_reason = null;
+  const { error } = await supabaseAdmin.from('orders').update(payload).eq('id', orderId);
   if (error) console.error('Error updating order status:', error);
+  return { error };
+}
+
+/** Cancelamento pela unidade no Studio — usa a função segura cancel_order:
+ * a unidade só consegue cancelar o próprio pedido (validado no banco). */
+export async function cancelOrder(orderId, reason) {
+  if (!isSupabaseConfigured) return { error: new Error('Supabase não configurado') };
+  const { error } = await supabase.rpc('cancel_order', { p_order_id: orderId, p_reason: reason || '' });
+  if (error) console.error('Error canceling order:', error);
   return { error };
 }
 

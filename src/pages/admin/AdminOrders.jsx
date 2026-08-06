@@ -58,6 +58,20 @@ export default function AdminOrders() {
   const [repRows, setRepRows] = useState(null); // null = ainda não gerou
   const [repLoading, setRepLoading] = useState(false);
 
+  // Modal de cancelamento (pede o motivo ao mudar status para Cancelado).
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelReasonInput, setCancelReasonInput] = useState('');
+  const [cancelSaving, setCancelSaving] = useState(false);
+
+  const confirmCancel = async () => {
+    if (!cancelTarget || !cancelReasonInput.trim()) return;
+    setCancelSaving(true);
+    await handleStatusChange(cancelTarget, 'canceled', cancelReasonInput);
+    setCancelSaving(false);
+    setCancelTarget(null);
+    setCancelReasonInput('');
+  };
+
   const loadData = async () => {
     setIsLoading(true);
     setOrders(await fetchOrders());
@@ -96,6 +110,7 @@ export default function AdminOrders() {
       Cliente: o.customer_name || '',
       Revendedor: o.reseller_name || '',
       Observação: o.customer_note || '',
+      'Motivo Cancelamento': o.cancel_reason || '',
       Total: Number(o.line_total || 0),
     }));
     const ws = XLSX.utils.json_to_sheet(data);
@@ -107,9 +122,12 @@ export default function AdminOrders() {
     XLSX.writeFile(wb, `relatorio_producao_${repFrom}_a_${repTo}.xlsx`);
   };
 
-  const handleStatusChange = async (order, status) => {
-    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status } : o)));
-    await updateOrderStatus(order.id, status);
+  const handleStatusChange = async (order, status, cancelReason) => {
+    const novoMotivo = status === 'canceled' ? (cancelReason || '').trim() || null : null;
+    setOrders((prev) =>
+      prev.map((o) => (o.id === order.id ? { ...o, status, cancel_reason: novoMotivo } : o))
+    );
+    await updateOrderStatus(order.id, status, cancelReason);
 
     if (!shouldNotifyStatus(status)) return;
 
@@ -223,7 +241,16 @@ export default function AdminOrders() {
       render: (o) => (
         <select
           value={o.status}
-          onChange={(e) => handleStatusChange(o, e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === 'canceled') {
+              // Pede o motivo antes de cancelar (não aplica direto).
+              setCancelReasonInput('');
+              setCancelTarget(o);
+            } else {
+              handleStatusChange(o, v);
+            }
+          }}
           className="rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-text-primary"
         >
           {STATUS_OPTIONS.map((option) => (
@@ -400,6 +427,7 @@ export default function AdminOrders() {
                       <th className="px-3 py-2 font-semibold">Cliente</th>
                       <th className="px-3 py-2 font-semibold">Revendedor</th>
                       <th className="px-3 py-2 font-semibold">Observação</th>
+                      <th className="px-3 py-2 font-semibold">Motivo Cancel.</th>
                       <th className="px-3 py-2 font-semibold text-right">Total</th>
                     </tr>
                   </thead>
@@ -418,6 +446,7 @@ export default function AdminOrders() {
                         <td className="px-3 py-2 text-text-secondary">{o.customer_name || '—'}</td>
                         <td className="px-3 py-2 text-text-secondary">{o.reseller_name || '—'}</td>
                         <td className="max-w-[220px] px-3 py-2 text-text-secondary">{o.customer_note || '—'}</td>
+                        <td className="max-w-[220px] px-3 py-2 text-text-secondary">{o.cancel_reason || '—'}</td>
                         <td className="whitespace-nowrap px-3 py-2 text-right">{formatCurrency(Number(o.line_total || 0))}</td>
                       </tr>
                     ))}
@@ -426,6 +455,32 @@ export default function AdminOrders() {
               </div>
             </>
           )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        title="Cancelar pedido"
+      >
+        <p className="mb-3 text-sm text-text-secondary">
+          Pedido <span className="font-semibold text-text-primary">{cancelTarget ? formatOrderNumber(cancelTarget) : ''}</span> — informe o motivo do cancelamento.
+        </p>
+        <textarea
+          value={cancelReasonInput}
+          onChange={(e) => setCancelReasonInput(e.target.value)}
+          rows={3}
+          autoFocus
+          placeholder="Ex: cliente desistiu, erro na arte, produto sem estoque…"
+          className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
+        />
+        <div className="mt-4 flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setCancelTarget(null)}>
+            Voltar
+          </Button>
+          <Button onClick={confirmCancel} disabled={cancelSaving || !cancelReasonInput.trim()}>
+            {cancelSaving ? 'Cancelando…' : 'Confirmar cancelamento'}
+          </Button>
         </div>
       </Modal>
     </div>
