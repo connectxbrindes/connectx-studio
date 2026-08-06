@@ -9,7 +9,6 @@ import Button from '../../components/ui/Button';
 
 const orderCategory = (o) => o.product?.category || o.product?.subcategory?.category || null;
 const todayLocal = () => new Date().toLocaleDateString('en-CA'); // yyyy-mm-dd (local)
-const STATUS_LABELS = Object.fromEntries(STATUS_OPTIONS.map((o) => [o.value, o.label]));
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendente' },
@@ -17,6 +16,8 @@ const STATUS_OPTIONS = [
   { value: 'completed', label: 'Concluído' },
   { value: 'canceled', label: 'Cancelado' },
 ];
+
+const STATUS_LABELS = Object.fromEntries(STATUS_OPTIONS.map((o) => [o.value, o.label]));
 
 // Ordem dos botões de filtro da lista (independente do dropdown de status).
 const STATUS_FILTERS = [
