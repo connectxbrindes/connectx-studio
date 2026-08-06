@@ -37,7 +37,7 @@ function formatOrderNumber(order) {
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('producing'); // padrão: Em produção
   const [resellerFilter, setResellerFilter] = useState('all');
   const [notice, setNotice] = useState('');
 
