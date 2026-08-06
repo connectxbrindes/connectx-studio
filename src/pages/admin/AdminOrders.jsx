@@ -9,6 +9,7 @@ import Button from '../../components/ui/Button';
 
 const orderCategory = (o) => o.product?.category || o.product?.subcategory?.category || null;
 const todayLocal = () => new Date().toLocaleDateString('en-CA'); // yyyy-mm-dd (local)
+const STATUS_LABELS = Object.fromEntries(STATUS_OPTIONS.map((o) => [o.value, o.label]));
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendente' },
@@ -53,6 +54,7 @@ export default function AdminOrders() {
   const [repFrom, setRepFrom] = useState(todayLocal());
   const [repTo, setRepTo] = useState(todayLocal());
   const [repCategory, setRepCategory] = useState('all');
+  const [repStatus, setRepStatus] = useState('completed');
   const [repRows, setRepRows] = useState(null); // null = ainda não gerou
   const [repLoading, setRepLoading] = useState(false);
 
@@ -72,7 +74,7 @@ export default function AdminOrders() {
     setRepLoading(true);
     const fromISO = new Date(`${repFrom}T00:00:00`).toISOString();
     const toISO = new Date(`${repTo}T23:59:59.999`).toISOString();
-    const rows = await fetchProductionReport(fromISO, toISO);
+    const rows = await fetchProductionReport(fromISO, toISO, repStatus);
     const filtered =
       repCategory === 'all' ? rows : rows.filter((o) => orderCategory(o)?.id === repCategory);
     setRepRows(filtered);
@@ -90,8 +92,10 @@ export default function AdminOrders() {
       Cor: o.color?.name || '',
       Tamanho: o.size?.name || '',
       Qtd: o.quantity,
+      Status: STATUS_LABELS[o.status] || o.status,
       Cliente: o.customer_name || '',
       Revendedor: o.reseller_name || '',
+      Observação: o.customer_note || '',
       Total: Number(o.line_total || 0),
     }));
     const ws = XLSX.utils.json_to_sheet(data);
@@ -297,7 +301,7 @@ export default function AdminOrders() {
       <Modal
         isOpen={reportOpen}
         onClose={() => setReportOpen(false)}
-        title="Relatório de Produção (Concluídos)"
+        title="Relatório de Produção"
         maxWidthClass="max-w-5xl"
       >
         {/* Filtros */}
@@ -331,6 +335,20 @@ export default function AdminOrders() {
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-text-secondary">Status</span>
+            <select
+              value={repStatus}
+              onChange={(e) => setRepStatus(e.target.value)}
+              className="rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+            >
+              {STATUS_FILTERS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
                 </option>
               ))}
             </select>
@@ -378,8 +396,10 @@ export default function AdminOrders() {
                       <th className="px-3 py-2 font-semibold">Produto</th>
                       <th className="px-3 py-2 font-semibold">Variação</th>
                       <th className="px-3 py-2 font-semibold text-center">Qtd</th>
+                      <th className="px-3 py-2 font-semibold">Status</th>
                       <th className="px-3 py-2 font-semibold">Cliente</th>
                       <th className="px-3 py-2 font-semibold">Revendedor</th>
+                      <th className="px-3 py-2 font-semibold">Observação</th>
                       <th className="px-3 py-2 font-semibold text-right">Total</th>
                     </tr>
                   </thead>
@@ -394,8 +414,10 @@ export default function AdminOrders() {
                           {[o.model?.name, o.color?.name, o.size?.name].filter(Boolean).join(' · ') || '—'}
                         </td>
                         <td className="px-3 py-2 text-center">{o.quantity}</td>
+                        <td className="px-3 py-2 text-text-secondary">{STATUS_LABELS[o.status] || o.status}</td>
                         <td className="px-3 py-2 text-text-secondary">{o.customer_name || '—'}</td>
                         <td className="px-3 py-2 text-text-secondary">{o.reseller_name || '—'}</td>
+                        <td className="max-w-[220px] px-3 py-2 text-text-secondary">{o.customer_note || '—'}</td>
                         <td className="whitespace-nowrap px-3 py-2 text-right">{formatCurrency(Number(o.line_total || 0))}</td>
                       </tr>
                     ))}

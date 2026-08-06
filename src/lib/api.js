@@ -637,23 +637,27 @@ export async function fetchMyOrders() {
   return data;
 }
 
-/** Relatório de produção: itens CONCLUÍDOS num intervalo de datas (por data do
- * pedido). A categoria vem do produto (direto ou via subcategoria) e é
- * filtrada no cliente. `fromISO`/`toISO` são os limites (UTC) do intervalo. */
-export async function fetchProductionReport(fromISO, toISO) {
+/** Relatório de produção: itens num intervalo de datas (por data do pedido),
+ * filtrados por status (`status='all'` traz todos). A categoria vem do produto
+ * (direto ou via subcategoria) e é filtrada no cliente. `fromISO`/`toISO` são
+ * os limites (UTC) do intervalo. */
+export async function fetchProductionReport(fromISO, toISO, status = 'completed') {
   if (!isSupabaseConfigured) return [];
-  const { data, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from('orders')
     .select(`
-      sequence_number, order_number, created_at, quantity, line_total, customer_name, reseller_name,
+      sequence_number, order_number, created_at, quantity, line_total, status,
+      customer_name, customer_note, reseller_name,
       product:products ( name, category:categories ( id, name ), subcategory:subcategories ( category:categories ( id, name ) ) ),
       color:product_colors ( name ), size:product_sizes ( name ), model:brand_models ( name )
     `)
-    .eq('status', 'completed')
     .gte('created_at', fromISO)
     .lte('created_at', toISO)
     .order('created_at', { ascending: true });
 
+  if (status && status !== 'all') query = query.eq('status', status);
+
+  const { data, error } = await query;
   if (error) {
     console.error('Error fetching production report:', error);
     return [];
