@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export default function Modal({ isOpen, onClose, title, children }) {
+export default function Modal({ isOpen, onClose, title, children, maxWidthClass = 'max-w-lg' }) {
   // Fechar no ESC
   useEffect(() => {
     const handleEsc = (e) => {
@@ -23,7 +23,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
       />
       
       {/* Modal panel */}
-      <div className="relative w-full max-w-lg rounded-2xl bg-panel shadow-2xl ring-1 ring-white/10 animate-fade-in">
+      <div className={`relative flex max-h-[90vh] w-full ${maxWidthClass} flex-col rounded-2xl bg-panel shadow-2xl ring-1 ring-white/10 animate-fade-in`}>
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h2 className="text-xl font-semibold">{title}</h2>
           <button
@@ -33,8 +33,8 @@ export default function Modal({ isOpen, onClose, title, children }) {
             ✕
           </button>
         </div>
-        
-        <div className="p-6">
+
+        <div className="overflow-y-auto p-6">
           {children}
         </div>
       </div>

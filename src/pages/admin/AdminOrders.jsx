@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
-import { fetchOrders, updateOrderStatus } from '../../lib/api';
+import * as XLSX from 'xlsx';
+import { fetchOrders, updateOrderStatus, fetchProductionReport, fetchCategories } from '../../lib/api';
 import { shouldNotifyStatus, notifyOrderStatus } from '../../lib/whatsapp';
 import { formatCurrency } from '../../utils/price';
 import DataTable from '../../components/admin/DataTable';
+import Modal from '../../components/ui/Modal';
+import Button from '../../components/ui/Button';
+
+const orderCategory = (o) => o.product?.category || o.product?.subcategory?.category || null;
+const todayLocal = () => new Date().toLocaleDateString('en-CA'); // yyyy-mm-dd (local)
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendente' },
@@ -41,6 +47,15 @@ export default function AdminOrders() {
   const [resellerFilter, setResellerFilter] = useState('all');
   const [notice, setNotice] = useState('');
 
+  // Relatório de produção (itens concluídos por intervalo + categoria).
+  const [reportOpen, setReportOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [repFrom, setRepFrom] = useState(todayLocal());
+  const [repTo, setRepTo] = useState(todayLocal());
+  const [repCategory, setRepCategory] = useState('all');
+  const [repRows, setRepRows] = useState(null); // null = ainda não gerou
+  const [repLoading, setRepLoading] = useState(false);
+
   const loadData = async () => {
     setIsLoading(true);
     setOrders(await fetchOrders());
@@ -49,7 +64,44 @@ export default function AdminOrders() {
 
   useEffect(() => {
     loadData();
+    fetchCategories().then(setCategories);
   }, []);
+
+  const generateReport = async () => {
+    if (!repFrom || !repTo) return;
+    setRepLoading(true);
+    const fromISO = new Date(`${repFrom}T00:00:00`).toISOString();
+    const toISO = new Date(`${repTo}T23:59:59.999`).toISOString();
+    const rows = await fetchProductionReport(fromISO, toISO);
+    const filtered =
+      repCategory === 'all' ? rows : rows.filter((o) => orderCategory(o)?.id === repCategory);
+    setRepRows(filtered);
+    setRepLoading(false);
+  };
+
+  const exportReport = () => {
+    if (!repRows || repRows.length === 0) return;
+    const data = repRows.map((o) => ({
+      Pedido: formatOrderNumber(o),
+      Data: formatDate(o.created_at),
+      Categoria: orderCategory(o)?.name || '—',
+      Produto: o.product?.name || '—',
+      Modelo: o.model?.name || '',
+      Cor: o.color?.name || '',
+      Tamanho: o.size?.name || '',
+      Qtd: o.quantity,
+      Cliente: o.customer_name || '',
+      Revendedor: o.reseller_name || '',
+      Total: Number(o.line_total || 0),
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = Object.keys(data[0]).map((k) => ({
+      wch: Math.min(Math.max(k.length, ...data.map((r) => String(r[k] ?? '').length)) + 2, 40),
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Produção');
+    XLSX.writeFile(wb, `relatorio_producao_${repFrom}_a_${repTo}.xlsx`);
+  };
 
   const handleStatusChange = async (order, status) => {
     setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status } : o)));
@@ -184,7 +236,12 @@ export default function AdminOrders() {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold">Gestão de Pedidos</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold">Gestão de Pedidos</h2>
+          <Button variant="secondary" onClick={() => setReportOpen(true)}>
+            📋 Relatório de Produção
+          </Button>
+        </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap gap-2">
@@ -236,6 +293,119 @@ export default function AdminOrders() {
           emptyMessage="Nenhum pedido encontrado com esses filtros."
         />
       )}
+
+      <Modal
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title="Relatório de Produção (Concluídos)"
+        maxWidthClass="max-w-5xl"
+      >
+        {/* Filtros */}
+        <div className="flex flex-wrap items-end gap-4">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-text-secondary">De</span>
+            <input
+              type="date"
+              value={repFrom}
+              onChange={(e) => setRepFrom(e.target.value)}
+              className="rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-text-secondary">Até</span>
+            <input
+              type="date"
+              value={repTo}
+              onChange={(e) => setRepTo(e.target.value)}
+              className="rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-text-secondary">Categoria</span>
+            <select
+              value={repCategory}
+              onChange={(e) => setRepCategory(e.target.value)}
+              className="rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+            >
+              <option value="all">Todas as categorias</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button onClick={generateReport} disabled={repLoading}>
+            {repLoading ? 'Gerando…' : 'Gerar relatório'}
+          </Button>
+        </div>
+
+        {/* Resultado */}
+        <div className="mt-6">
+          {repRows === null ? (
+            <p className="text-sm text-text-secondary">
+              Escolha o período e a categoria e clique em “Gerar relatório”.
+            </p>
+          ) : repRows.length === 0 ? (
+            <p className="text-sm text-text-secondary">
+              Nenhum item concluído nesse período/categoria.
+            </p>
+          ) : (
+            <>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-text-secondary">
+                  <span className="font-semibold text-text-primary">{repRows.length}</span> itens ·{' '}
+                  <span className="font-semibold text-text-primary">
+                    {repRows.reduce((s, o) => s + (o.quantity || 0), 0)}
+                  </span>{' '}
+                  un ·{' '}
+                  <span className="font-semibold text-text-primary">
+                    {formatCurrency(repRows.reduce((s, o) => s + Number(o.line_total || 0), 0))}
+                  </span>
+                </p>
+                <Button variant="secondary" onClick={exportReport}>
+                  📊 Exportar Excel
+                </Button>
+              </div>
+
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-bg text-text-secondary border-b border-border">
+                    <tr>
+                      <th className="px-3 py-2 font-semibold">Pedido</th>
+                      <th className="px-3 py-2 font-semibold">Data</th>
+                      <th className="px-3 py-2 font-semibold">Categoria</th>
+                      <th className="px-3 py-2 font-semibold">Produto</th>
+                      <th className="px-3 py-2 font-semibold">Variação</th>
+                      <th className="px-3 py-2 font-semibold text-center">Qtd</th>
+                      <th className="px-3 py-2 font-semibold">Cliente</th>
+                      <th className="px-3 py-2 font-semibold">Revendedor</th>
+                      <th className="px-3 py-2 font-semibold text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {repRows.map((o, i) => (
+                      <tr key={`${o.sequence_number}-${i}`}>
+                        <td className="whitespace-nowrap px-3 py-2 font-medium">{formatOrderNumber(o)}</td>
+                        <td className="whitespace-nowrap px-3 py-2 text-text-secondary">{formatDate(o.created_at)}</td>
+                        <td className="px-3 py-2 text-text-secondary">{orderCategory(o)?.name || '—'}</td>
+                        <td className="px-3 py-2">{o.product?.name || '—'}</td>
+                        <td className="px-3 py-2 text-text-secondary">
+                          {[o.model?.name, o.color?.name, o.size?.name].filter(Boolean).join(' · ') || '—'}
+                        </td>
+                        <td className="px-3 py-2 text-center">{o.quantity}</td>
+                        <td className="px-3 py-2 text-text-secondary">{o.customer_name || '—'}</td>
+                        <td className="px-3 py-2 text-text-secondary">{o.reseller_name || '—'}</td>
+                        <td className="whitespace-nowrap px-3 py-2 text-right">{formatCurrency(Number(o.line_total || 0))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
