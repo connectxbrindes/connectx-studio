@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
-import { fetchOrders, updateOrderStatus, fetchProductionReport, fetchCategories } from '../../lib/api';
+import { fetchOrders, updateOrderStatus, fetchProductionReport, fetchCategories, fetchAllBrandModels } from '../../lib/api';
 import { shouldNotifyStatus, notifyOrderStatus } from '../../lib/whatsapp';
 import { formatCurrency } from '../../utils/price';
 import DataTable from '../../components/admin/DataTable';
@@ -50,6 +50,7 @@ export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState('producing'); // padrão: Em produção
   const [resellerFilter, setResellerFilter] = useState('all');
   const [modelFilter, setModelFilter] = useState('all');
+  const [allModels, setAllModels] = useState([]);
   const [dateFilter, setDateFilter] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -86,6 +87,7 @@ export default function AdminOrders() {
   useEffect(() => {
     loadData();
     fetchCategories().then(setCategories);
+    fetchAllBrandModels().then(setAllModels);
   }, []);
 
   const generateReport = async () => {
@@ -156,15 +158,22 @@ export default function AdminOrders() {
     ).values()
   ).sort((a, b) => a.name.localeCompare(b.name));
 
-  // Modelos presentes nos pedidos (pro dropdown de filtro).
-  const modelOptions = Array.from(
-    new Set(orders.map((o) => o.model?.name).filter(Boolean))
-  ).sort((a, b) => a.localeCompare(b));
+  // Todos os modelos cadastrados, rotulados "MARCA · Modelo".
+  const modelOptions = [...allModels]
+    .sort(
+      (a, b) =>
+        (a.brand?.name || '').localeCompare(b.brand?.name || '') ||
+        (a.name || '').localeCompare(b.name || '')
+    )
+    .map((m) => ({
+      id: m.id,
+      label: `${m.brand?.name ? `${m.brand.name} · ` : ''}${(m.name || '').trim()}`,
+    }));
 
   const visibleOrders = orders
     .filter((o) => statusFilter === 'all' || o.status === statusFilter)
     .filter((o) => resellerFilter === 'all' || o.reseller_id === resellerFilter)
-    .filter((o) => modelFilter === 'all' || o.model?.name === modelFilter)
+    .filter((o) => modelFilter === 'all' || o.model?.id === modelFilter)
     .filter((o) => !dateFilter || dateKeyLocal(o.created_at) === dateFilter);
 
   const columns = [
@@ -321,9 +330,9 @@ export default function AdminOrders() {
             className="rounded-lg border border-border px-3 py-1.5 text-sm outline-none focus:border-text-primary"
           >
             <option value="all">Todos os modelos</option>
-            {modelOptions.map((name) => (
-              <option key={name} value={name}>
-                {name}
+            {modelOptions.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
               </option>
             ))}
           </select>

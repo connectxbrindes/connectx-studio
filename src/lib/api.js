@@ -602,7 +602,7 @@ export async function fetchOrders() {
       product:products ( name ),
       color:product_colors ( name ),
       size:product_sizes ( name ),
-      model:brand_models ( name )
+      model:brand_models ( id, name )
     `)
     .order('created_at', { ascending: false });
 
