@@ -12,7 +12,7 @@ export default function AdminResellers() {
   const [resellers, setResellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
+  const [statusFilter, setStatusFilter] = useState('active'); // padrão: Ativos
   const [togglingId, setTogglingId] = useState(null);
 
   // Modal state
@@ -338,9 +338,9 @@ export default function AdminResellers() {
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {[
-          { key: 'all', label: 'Todos', n: resellers.length },
           { key: 'active', label: 'Ativos', n: totalAtivos },
           { key: 'inactive', label: 'Inativos', n: totalInativos },
+          { key: 'all', label: 'Todos', n: resellers.length },
         ].map((f) => (
           <button
             key={f.key}
