@@ -11,6 +11,15 @@ const STATUS_OPTIONS = [
   { value: 'canceled', label: 'Cancelado' },
 ];
 
+// Ordem dos botões de filtro da lista (independente do dropdown de status).
+const STATUS_FILTERS = [
+  { value: 'producing', label: 'Em produção' },
+  { value: 'completed', label: 'Concluído' },
+  { value: 'pending', label: 'Pendente' },
+  { value: 'canceled', label: 'Cancelado' },
+  { value: 'all', label: 'Todos' },
+];
+
 function formatDate(isoString) {
   return new Date(isoString).toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -179,16 +188,7 @@ export default function AdminOrders() {
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setStatusFilter('all')}
-              className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                statusFilter === 'all' ? 'border-text-primary bg-text-primary text-white' : 'border-border'
-              }`}
-            >
-              Todos
-            </button>
-            {STATUS_OPTIONS.map((option) => (
+            {STATUS_FILTERS.map((option) => (
               <button
                 key={option.value}
                 type="button"
