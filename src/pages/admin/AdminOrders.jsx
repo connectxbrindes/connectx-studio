@@ -9,6 +9,8 @@ import Button from '../../components/ui/Button';
 
 const orderCategory = (o) => o.product?.category || o.product?.subcategory?.category || null;
 const todayLocal = () => new Date().toLocaleDateString('en-CA'); // yyyy-mm-dd (local)
+// 'yyyy-mm-dd' no fuso local — pra casar com o <input type="date">.
+const dateKeyLocal = (iso) => new Date(iso).toLocaleDateString('en-CA');
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendente' },
@@ -47,6 +49,8 @@ export default function AdminOrders() {
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('producing'); // padrão: Em produção
   const [resellerFilter, setResellerFilter] = useState('all');
+  const [modelFilter, setModelFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('');
   const [notice, setNotice] = useState('');
 
   // Relatório de produção (itens concluídos por intervalo + categoria).
@@ -152,9 +156,16 @@ export default function AdminOrders() {
     ).values()
   ).sort((a, b) => a.name.localeCompare(b.name));
 
+  // Modelos presentes nos pedidos (pro dropdown de filtro).
+  const modelOptions = Array.from(
+    new Set(orders.map((o) => o.model?.name).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
+
   const visibleOrders = orders
     .filter((o) => statusFilter === 'all' || o.status === statusFilter)
-    .filter((o) => resellerFilter === 'all' || o.reseller_id === resellerFilter);
+    .filter((o) => resellerFilter === 'all' || o.reseller_id === resellerFilter)
+    .filter((o) => modelFilter === 'all' || o.model?.name === modelFilter)
+    .filter((o) => !dateFilter || dateKeyLocal(o.created_at) === dateFilter);
 
   const columns = [
     {
@@ -303,6 +314,39 @@ export default function AdminOrders() {
               </option>
             ))}
           </select>
+
+          <select
+            value={modelFilter}
+            onChange={(e) => setModelFilter(e.target.value)}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm outline-none focus:border-text-primary"
+          >
+            <option value="all">Todos os modelos</option>
+            {modelOptions.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+
+          <div className="flex items-center gap-1">
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm outline-none focus:border-text-primary"
+            />
+            {dateFilter && (
+              <button
+                type="button"
+                onClick={() => setDateFilter('')}
+                aria-label="Limpar data"
+                title="Limpar data"
+                className="rounded-lg border border-border px-2 py-1.5 text-sm text-text-secondary hover:text-text-primary"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
