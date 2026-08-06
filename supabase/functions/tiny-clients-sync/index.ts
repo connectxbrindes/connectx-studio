@@ -1,19 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// Sincroniza os contatos do Tiny para resellers (Revendedores) e CLASSIFICA
-// cada um por tipo (Cliente/Outro), pra a aba mostrar só clientes.
-//
-// - Import: contatos.pesquisa.php (paginado) → insere novos (tiny_tipo=null).
-// - Classificação: contato.obter.php por contato ainda sem tiny_tipo, lê
-//   `tipos_contato` → 'cliente' se a lista tem "Cliente", senão 'outro'.
-//   Feita em lote (pausa entre chamadas) pra respeitar o rate limit do Tiny.
-// - A aba Revendedores esconde tiny_tipo='outro' (some da tela sem apagar).
-//
-// ?mode=classify → só classifica um lote (sem reimportar), pra acelerar a
-// carga inicial. Sem param (cron) → importa novos + classifica um lote.
-//
-// Requer o secret TINY_API_TOKEN.
+// Importa contatos do Tiny para resellers e classifica por tipo (Cliente/Outro).
+// Só o agendador dispara: header x-sync-secret = app_config.sync_secret.
+// ?mode=classify → só classifica um lote. Requer TINY_API_TOKEN.
 
 const TINY_API = "https://api.tiny.com.br/api2";
 const CLASSIFY_BATCH = 80;
@@ -39,10 +29,15 @@ Deno.serve(async (req: Request) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
+  // Autorização: só quem tem o segredo (o agendador) dispara.
+  const { data: cfg } = await supabase.from("app_config").select("value").eq("key", "sync_secret").maybeSingle();
+  if (cfg?.value && req.headers.get("x-sync-secret") !== cfg.value) {
+    return json({ error: "unauthorized" }, 401);
+  }
+
   const mode = new URL(req.url).searchParams.get("mode");
   let inseridos = 0;
 
-  // ── A) Import de novos contatos (pulado no modo classify) ────────────────
   if (mode !== "classify") {
     const contatos: any[] = [];
     let pagina = 1;
@@ -81,7 +76,7 @@ Deno.serve(async (req: Request) => {
         commission_rate: 0,
         status: String(x.c?.situacao ?? "").toLowerCase() === "inativo" ? "inactive" : "active",
         tiny_id: x.id,
-        tiny_tipo: null, // classificado no passo B
+        tiny_tipo: null,
       }));
     for (let i = 0; i < novos.length; i += 200) {
       const { error } = await supabase.from("resellers").insert(novos.slice(i, i + 200));
@@ -90,7 +85,6 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // ── B) Classifica um lote dos que ainda não têm tiny_tipo ────────────────
   const { data: pendentes } = await supabase
     .from("resellers")
     .select("id, tiny_id")

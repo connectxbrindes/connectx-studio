@@ -366,6 +366,9 @@ alter table orders add column if not exists reseller_name text;
 -- "Meus Pedidos" e no painel, pra produção ver qualquer instrução do pedido.
 alter table orders add column if not exists customer_note text;
 
+-- Seguro: exige login; a UNIDADE tem o reseller_id forçado pela sessão
+-- (anti-spoofing); o MASTER pode informar o reseller_id (uso admin). anon
+-- não cria pedido (revoke abaixo).
 create or replace function place_order(order_rows jsonb)
 returns void
 language plpgsql
@@ -374,10 +377,22 @@ set search_path = public
 as $$
 declare
   row_data jsonb;
+  v_session_reseller uuid;
+  v_is_master boolean;
   v_reseller_id uuid;
 begin
+  v_session_reseller := current_reseller_id();
+  v_is_master := is_master();
+  if v_session_reseller is null and not v_is_master then
+    raise exception 'Nao autenticado';
+  end if;
+
   for row_data in select * from jsonb_array_elements(order_rows) loop
-    v_reseller_id := nullif(row_data->>'reseller_id','')::uuid;
+    if v_is_master then
+      v_reseller_id := nullif(row_data->>'reseller_id','')::uuid;
+    else
+      v_reseller_id := v_session_reseller;
+    end if;
     insert into orders (
       customer_name, customer_contact, customer_note, reseller_id, reseller_name, product_id, color_id, size_id, model_id,
       quantity, personalization_snapshot, personalization_fee, unit_price, line_total,
@@ -403,7 +418,13 @@ begin
 end;
 $$;
 
-grant execute on function place_order(jsonb) to anon, authenticated;
+revoke execute on function place_order(jsonb) from anon, public;
+grant execute on function place_order(jsonb) to authenticated;
+
+-- Config privada (ex: segredo dos jobs de sync). RLS sem policy → só o
+-- service_role (Edge Functions) e o cron (SQL) leem; anon/authenticated não.
+create table if not exists app_config (key text primary key, value text not null);
+alter table app_config enable row level security;
 
 -- ---------------------------------------------------------------------------
 -- Numeração sequencial do pedido (#0001, #0002...) + status simplificado

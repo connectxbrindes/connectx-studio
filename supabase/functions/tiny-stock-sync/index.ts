@@ -9,7 +9,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // atualizamos stock_quantity em product_model_variants e product_colors.
 // Saldo negativo (vendido a descoberto no Tiny) vira 0 = esgotado.
 //
-// Requer o secret TINY_API_TOKEN. Roda leve — bom pra chamar em agendamento.
+// Só o agendador dispara: precisa do header x-sync-secret = app_config.sync_secret.
+// Requer o secret TINY_API_TOKEN.
 
 const TINY_API = "https://api.tiny.com.br/api2";
 const JANELA_DIAS = 27; // dentro do limite de 30 dias do Tiny, com folga
@@ -24,7 +25,7 @@ function fmtData(d: Date): string {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req: Request) => {
   const token = Deno.env.get("TINY_API_TOKEN");
   if (!token) return json({ error: "TINY_API_TOKEN não configurado nos secrets do Supabase." });
 
@@ -32,6 +33,12 @@ Deno.serve(async () => {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
+
+  // Autorização: só quem tem o segredo (o agendador) dispara.
+  const { data: cfg } = await supabase.from("app_config").select("value").eq("key", "sync_secret").maybeSingle();
+  if (cfg?.value && req.headers.get("x-sync-secret") !== cfg.value) {
+    return json({ error: "unauthorized" }, 401);
+  }
 
   // Mapa codigo(UPPER) -> saldo, a partir dos produtos alterados no período.
   const saldoPorCodigo = new Map<string, number>();
@@ -45,7 +52,6 @@ Deno.serve(async () => {
     const retorno = (res as { retorno?: any })?.retorno;
 
     if (retorno?.status !== "OK") {
-      // 20 = "não retornou registros" (sem movimentação) → ok, segue vazio.
       if (Number(retorno?.codigo_erro) === 20) break;
       return json({ error: "Falha na API do Tiny.", detalhe: retorno ?? res });
     }
@@ -54,7 +60,7 @@ Deno.serve(async () => {
     for (const item of (retorno.produtos as Array<{ produto?: any }>) ?? []) {
       const p = item.produto ?? item;
       const codigo = String(p?.codigo ?? "").trim().toUpperCase();
-      if (!codigo) continue; // produtos sem código não interessam
+      if (!codigo) continue;
       const saldo = Math.max(0, Math.trunc(Number(p?.saldo ?? 0)) || 0);
       saldoPorCodigo.set(codigo, saldo);
     }
@@ -63,7 +69,6 @@ Deno.serve(async () => {
     if (pagina <= numeroPaginas) await sleep(600);
   } while (pagina <= numeroPaginas && pagina <= 30);
 
-  // Nossos SKUs (capas por modelo + térmicos por cor).
   const [{ data: variants }, { data: colors }] = await Promise.all([
     supabase.from("product_model_variants").select("bling_sku").not("bling_sku", "is", null),
     supabase.from("product_colors").select("bling_sku").not("bling_sku", "is", null),
