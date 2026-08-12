@@ -70,14 +70,24 @@ export default function Step2ChooseVariant() {
 
   return (
     <section className="grid grid-cols-1 overflow-hidden rounded-2xl lg:grid-cols-2">
-      <ProductPreview
-        bare
-        product={product}
-        color={selectedColor}
-        model={selectedModel}
-        elements={[]}
-        className="min-h-[320px] lg:min-h-[560px]"
-      />
+      {/* Altura FIXA da prévia (não min-h): trava a caixa pra ela mandar na
+          altura da seção em vez de ser esticada pelo formulário ao lado. Sem
+          isso, produtos com formulário mais alto (ex: garrafa tem "Tamanho",
+          chaveiro não) deixam a seção com alturas diferentes e desalinham
+          botões/cores/rodapé ao trocar de produto. O valor precisa ser >= o
+          formulário mais alto da categoria pra sempre dominar. A imagem se
+          encaixa dentro por object-contain, então a proporção do produto não
+          importa. */}
+      <div className="h-[360px] w-full lg:h-[620px]">
+        <ProductPreview
+          bare
+          product={product}
+          color={selectedColor}
+          model={selectedModel}
+          elements={[]}
+          className="h-full"
+        />
+      </div>
 
       <div data-tour="variacao" className="flex flex-col gap-8 bg-panel p-8 sm:p-10">
         <div className="border-b border-border pb-6">
