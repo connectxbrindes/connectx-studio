@@ -27,8 +27,8 @@ const ProductPreview = forwardRef(function ProductPreview(
         hasModelMockup
           ? `mx-auto aspect-[331/590] ${bare ? 'h-full' : `${heightClass} overflow-hidden rounded-xl`}`
           : `w-full ${bare ? 'h-full' : `${heightClass} overflow-hidden rounded-xl`}`
-      } ${artOnly ? '' : hasModelMockup ? 'bg-white' : color?.image ? 'bg-panel' : ''} ${className}`}
-      style={artOnly || hasModelMockup || color?.image ? undefined : { backgroundColor: color.hex }}
+      } ${artOnly ? '' : hasModelMockup ? 'bg-white' : backgroundImage ? 'bg-panel' : ''} ${className}`}
+      style={artOnly || hasModelMockup || backgroundImage ? undefined : { backgroundColor: color.hex }}
     >
       {!artOnly && (
         <img
