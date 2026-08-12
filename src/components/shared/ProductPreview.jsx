@@ -14,6 +14,11 @@ const ProductPreview = forwardRef(function ProductPreview(
   const backgroundImage = model?.mockupImageUrl || color?.image || product.image;
   const maskImageUrl = model?.maskImageUrl || null;
   const hasModelMockup = Boolean(model?.mockupImageUrl);
+  // Perspectiva (skew) da área de personalização: inclina a BASE dos elementos
+  // só na PRÉVIA, dando a ilusão de que a arte está deitada sobre a superfície
+  // do produto (ex: chaveiro exibido de lado). É efeito visual — a arte de
+  // produção (artOnly) sai reta, sem skew, porque a gravação é plana.
+  const previewSkew = artOnly ? 0 : Number(product?.personalizationArea?.skew) || 0;
 
   return (
     <div
@@ -46,7 +51,7 @@ const ProductPreview = forwardRef(function ProductPreview(
               top: `${element.y}%`,
               width: `${element.width}%`,
               height: `${element.height}%`,
-              transform: `rotate(${element.rotation}deg)`,
+              transform: `skewY(${previewSkew}deg) rotate(${element.rotation}deg)`,
               zIndex: element.zIndex,
             }}
             className="flex items-center justify-center"

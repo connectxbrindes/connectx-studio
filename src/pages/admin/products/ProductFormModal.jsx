@@ -5,7 +5,7 @@ import Modal from '../../../components/ui/Modal';
 import ImageUploader from '../../../components/admin/ImageUploader';
 import Model3DUploader from '../../../components/admin/Model3DUploader';
 
-const EMPTY_AREA = { x: 25, y: 20, width: 50, height: 50, angle: 0 };
+const EMPTY_AREA = { x: 25, y: 20, width: 50, height: 50, angle: 0, skew: 0 };
 
 function emptyForm() {
   return {
@@ -459,6 +459,21 @@ export default function ProductFormModal({
             />
             <p className="mt-1 text-xs text-text-secondary">
               Inclinação inicial do texto/imagem que o cliente adicionar — pra encaixar em produtos exibidos de lado (ex: -20). O cliente ainda pode ajustar.
+            </p>
+          </div>
+          <div className="mt-3 max-w-[8rem]">
+            <span className="mb-1 block text-xs uppercase text-text-secondary">Perspectiva (°)</span>
+            <input
+              type="number"
+              min="-45"
+              max="45"
+              step="1"
+              value={form.personalization_area.skew ?? 0}
+              onChange={(e) => updateArea({ skew: Number(e.target.value) })}
+              className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
+            />
+            <p className="mt-1 text-xs text-text-secondary">
+              Inclina a BASE do texto/arte (skew) só na prévia, dando a ilusão de estar deitado sobre a superfície (ex: 14 no chaveiro). Não afeta a arte enviada pra produção.
             </p>
           </div>
         </div>
