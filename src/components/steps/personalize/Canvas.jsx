@@ -136,6 +136,10 @@ export default function Canvas() {
   const backgroundImage = selectedModel?.mockupImageUrl || color?.image || product.image;
   const maskImageUrl = selectedModel?.maskImageUrl || null;
   const hasModelMockup = Boolean(selectedModel?.mockupImageUrl);
+  // Perspectiva (skew) da área: inclina a base do conteúdo do texto só pra
+  // dar a ilusão de estar deitado na superfície. Aplicado no conteúdo interno
+  // (não na caixa/target da Moveable), pra os manípulos continuarem alinhados.
+  const previewSkew = Number(area?.skew) || 0;
 
   return (
     <div
@@ -190,6 +194,7 @@ export default function Canvas() {
             <PersonalizationElement
               key={element.id}
               element={element}
+              skew={previewSkew}
               isSelected={element.id === selectedElementId}
               registerRef={registerRef}
               onSelect={(e) => {

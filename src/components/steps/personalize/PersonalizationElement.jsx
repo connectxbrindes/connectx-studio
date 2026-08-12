@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function PersonalizationElement({ element, isSelected, registerRef, onSelect }) {
+export default function PersonalizationElement({ element, isSelected, registerRef, onSelect, skew = 0 }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -41,6 +41,9 @@ export default function PersonalizationElement({ element, isSelected, registerRe
             textAlign: element.textAlign,
             width: '100%',
             outline: 'none',
+            // Skew só no conteúdo (não na caixa/target da Moveable) — inclina a
+            // base do texto pra ilusão de perspectiva, sem desalinhar manípulos.
+            transform: skew ? `skewY(${skew}deg)` : undefined,
           }}
         >
           {element.content?.trim() ? element.content : 'Seu texto aqui'}
