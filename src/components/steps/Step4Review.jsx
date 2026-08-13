@@ -62,6 +62,7 @@ export default function Step4Review() {
   const resetConfigurator = useStore((s) => s.resetConfigurator);
   const resetWizard = useStore((s) => s.resetWizard);
   const previewMode = useStore((s) => s.previewMode);
+  const hidePrices = useStore((s) => s.identity?.hidePrices);
   const cartItems = useStore((s) => s.items);
   const { exportCanvas } = useCanvasExport();
   const previewRef = useRef(null);
@@ -257,22 +258,24 @@ export default function Step4Review() {
             </div>
           </div>
 
-          <div className="space-y-2 border-t border-border pt-6 text-sm">
-            <div className="flex justify-between text-text-secondary">
-              <span>Preço unitário</span>
-              <span>{formatCurrency(product.price)}</span>
-            </div>
-            {fee > 0 && (
+          {!hidePrices && (
+            <div className="space-y-2 border-t border-border pt-6 text-sm">
               <div className="flex justify-between text-text-secondary">
-                <span>Taxa de personalização</span>
-                <span>{formatCurrency(fee)}</span>
+                <span>Preço unitário</span>
+                <span>{formatCurrency(product.price)}</span>
               </div>
-            )}
-            <div className="flex justify-between text-lg font-bold text-text-primary">
-              <span>Total</span>
-              <span>{formatCurrency(lineTotal)}</span>
+              {fee > 0 && (
+                <div className="flex justify-between text-text-secondary">
+                  <span>Taxa de personalização</span>
+                  <span>{formatCurrency(fee)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-lg font-bold text-text-primary">
+                <span>Total</span>
+                <span>{formatCurrency(lineTotal)}</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {previewMode ? (
             // Prévia/teste dentro do painel — sem carrinho nem pedido.

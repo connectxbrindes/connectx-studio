@@ -569,7 +569,7 @@ export async function fetchCurrentIdentity() {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('role, reseller_id, reseller:resellers ( name )')
+    .select('role, reseller_id, reseller:resellers ( name, hide_prices )')
     .eq('id', userData.user.id)
     .single();
 
@@ -582,6 +582,8 @@ export async function fetchCurrentIdentity() {
     role: data.role,
     resellerId: data.reseller_id || null,
     resellerName: data.reseller?.name || null,
+    // Contas de apresentação/demo: escondem preços no Studio.
+    hidePrices: Boolean(data.reseller?.hide_prices),
   };
 }
 

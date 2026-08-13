@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchMyOrders, cancelOrder } from '../lib/api';
+import { useStore } from '../store/useStore';
 import { formatCurrency } from '../utils/price';
 import Header from '../components/layout/Header';
 import Modal from '../components/ui/Modal';
@@ -51,6 +52,7 @@ const productLine = (o) =>
 
 export default function MyOrders() {
   const [orders, setOrders] = useState([]);
+  const hidePrices = useStore((s) => s.identity?.hidePrices);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -315,7 +317,9 @@ export default function MyOrders() {
 
                         {/* Total + hora */}
                         <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center">
-                          <span className="text-lg font-semibold">{formatCurrency(Number(o.line_total))}</span>
+                          {!hidePrices && (
+                            <span className="text-lg font-semibold">{formatCurrency(Number(o.line_total))}</span>
+                          )}
                           <span className="text-xs text-text-secondary">
                             {group.label === 'Hoje' || group.label === 'Ontem' ? `${group.label}, ` : ''}
                             {formatTime(o.created_at)}

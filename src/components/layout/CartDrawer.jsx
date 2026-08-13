@@ -15,6 +15,7 @@ export default function CartDrawer() {
   const showToast = useStore((s) => s.showToast);
   const subtotal = useStore((s) => s.cartSubtotal());
   const identity = useStore((s) => s.identity);
+  const hidePrices = identity?.hidePrices;
   const resetConfigurator = useStore((s) => s.resetConfigurator);
   const resetWizard = useStore((s) => s.resetWizard);
 
@@ -132,7 +133,7 @@ export default function CartDrawer() {
                         +
                       </button>
                     </div>
-                    <p className="font-semibold">{formatCurrency(item.lineTotal)}</p>
+                    {!hidePrices && <p className="font-semibold">{formatCurrency(item.lineTotal)}</p>}
                   </div>
                 </div>
                 <button
@@ -149,10 +150,12 @@ export default function CartDrawer() {
         )}
 
         <div className="border-t border-border px-6 py-6">
-          <div className="mb-4 flex items-center justify-between text-lg font-bold">
-            <span>Subtotal</span>
-            <span>{formatCurrency(subtotal)}</span>
-          </div>
+          {!hidePrices && (
+            <div className="mb-4 flex items-center justify-between text-lg font-bold">
+              <span>Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+          )}
 
           {items.length > 0 && (
             <div className="mb-4 flex flex-col gap-3">
