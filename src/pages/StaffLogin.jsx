@@ -40,6 +40,9 @@ export default function StaffLogin() {
     }
     setIsSubmitting(false);
     persistEmail(email);
+    // Registra o acesso da unidade (pra contabilizar quantos logins ela teve).
+    // Não bloqueia a navegação nem quebra o login se falhar.
+    supabase.rpc('log_reseller_login').catch(() => {});
     navigate('/');
   };
 
