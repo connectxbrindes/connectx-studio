@@ -22,28 +22,34 @@ export default function StaffLogin() {
     setIsSubmitting(true);
     setError('');
     setIsPanelUser(false);
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) {
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setIsSubmitting(false);
+        setError('E-mail ou senha inválidos.');
+        return;
+      }
+      // Só unidade (reseller) e master acessam o Studio. Um usuário do painel
+      // (staff) autentica mas não pode entrar aqui — em vez de deixar o guard
+      // "voltar" sem explicação, avisa e manda pro Painel.
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+      if (profile?.role === 'staff') {
+        await supabase.auth.signOut();
+        setIsSubmitting(false);
+        setIsPanelUser(true);
+        return;
+      }
       setIsSubmitting(false);
-      setError('E-mail ou senha inválidos.');
-      return;
-    }
-    // Só unidade (reseller) e master acessam o Studio. Um usuário do painel
-    // (staff) autentica mas não pode entrar aqui — em vez de deixar o guard
-    // "voltar" sem explicação, avisa e manda pro Painel.
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-    if (profile?.role === 'staff') {
-      await supabase.auth.signOut();
+      persistEmail(email);
+      // Registra o acesso da unidade (pra contabilizar quantos logins ela teve).
+      // Não bloqueia a navegação nem quebra o login se falhar.
+      Promise.resolve(supabase.rpc('log_reseller_login')).catch(() => {});
+      navigate('/');
+    } catch (err) {
+      console.error('Erro inesperado no login:', err);
       setIsSubmitting(false);
-      setIsPanelUser(true);
-      return;
+      setError('Não foi possível entrar. Tente novamente.');
     }
-    setIsSubmitting(false);
-    persistEmail(email);
-    // Registra o acesso da unidade (pra contabilizar quantos logins ela teve).
-    // Não bloqueia a navegação nem quebra o login se falhar.
-    supabase.rpc('log_reseller_login').catch(() => {});
-    navigate('/');
   };
 
   return (
