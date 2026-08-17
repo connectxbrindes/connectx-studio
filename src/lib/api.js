@@ -582,8 +582,9 @@ export async function fetchCurrentIdentity() {
     role: data.role,
     resellerId: data.reseller_id || null,
     resellerName: data.reseller?.name || null,
-    // Contas de apresentação/demo: escondem preços no Studio.
-    hidePrices: Boolean(data.reseller?.hide_prices),
+    // TEMPORÁRIO: preços ocultos pra todo mundo no Studio (independente da conta).
+    // Reverter pra `Boolean(data.reseller?.hide_prices)` quando voltar a mostrar valores.
+    hidePrices: true,
   };
 }
 
