@@ -221,6 +221,18 @@ export default function AdminOrders() {
     },
     { key: 'customer_name', label: 'Cliente', render: (o) => o.customer_name },
     {
+      key: 'reseller',
+      label: 'Unidade',
+      render: (o) => (
+        <span
+          className="block max-w-[14rem] whitespace-normal break-words font-medium text-text-primary"
+          title={o.reseller_name || ''}
+        >
+          {o.reseller_name || '—'}
+        </span>
+      ),
+    },
+    {
       key: 'product',
       label: 'Produto',
       render: (o) =>
@@ -243,7 +255,6 @@ export default function AdminOrders() {
         ),
     },
     { key: 'line_total', label: 'Total', render: (o) => formatCurrency(Number(o.line_total)) },
-    { key: 'reseller', label: 'Revendedor', render: (o) => o.reseller_name || '—' },
     {
       key: 'files',
       label: 'Arquivos',
