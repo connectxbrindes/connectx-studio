@@ -20,6 +20,7 @@ export default function AdminResellers() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
+    short_name: '',
     contact_name: '',
     cnpj_cpf: '',
     phone: '',
@@ -77,6 +78,7 @@ export default function AdminResellers() {
       setEditingId(reseller.id);
       setFormData({
         name: reseller.name,
+        short_name: reseller.short_name || '',
         contact_name: reseller.contact_name || '',
         cnpj_cpf: reseller.cnpj_cpf || '',
         phone: reseller.phone || '',
@@ -88,6 +90,7 @@ export default function AdminResellers() {
       setEditingId(null);
       setFormData({
         name: '',
+        short_name: '',
         contact_name: '',
         cnpj_cpf: '',
         phone: '',
@@ -134,6 +137,7 @@ export default function AdminResellers() {
 
     const payload = {
       name: formData.name,
+      short_name: formData.short_name?.trim() || null,
       contact_name: formData.contact_name,
       cnpj_cpf: formData.cnpj_cpf || null,
       phone: formData.phone,
@@ -450,7 +454,21 @@ export default function AdminResellers() {
               placeholder="Ex: Loja do João"
             />
           </div>
-          
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-secondary">Apelido (nome curto)</label>
+            <input
+              type="text"
+              value={formData.short_name}
+              onChange={(e) => setFormData({ ...formData, short_name: e.target.value })}
+              className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent"
+              placeholder="Ex: KingCase JK"
+            />
+            <p className="mt-1 text-xs text-text-secondary">
+              É o nome que aparece na coluna “Unidade” dos pedidos. Se ficar vazio, usa o nome completo.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1 block text-sm font-medium text-text-secondary">CNPJ / CPF</label>

@@ -602,6 +602,7 @@ export async function fetchOrders() {
       personalization_fee, unit_price, line_total, status, cancel_reason, created_at,
       preview_image_url, original_files_zip_url, art_image_url,
       reseller_id, reseller_name,
+      reseller:resellers ( name, short_name ),
       product:products ( name ),
       color:product_colors ( name ),
       size:product_sizes ( name ),

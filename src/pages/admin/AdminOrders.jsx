@@ -115,7 +115,7 @@ export default function AdminOrders() {
       Qtd: o.quantity,
       Status: STATUS_LABELS[o.status] || o.status,
       Cliente: o.customer_name || '',
-      Revendedor: o.reseller_name || '',
+      Unidade: o.reseller?.short_name || o.reseller_name || '',
       Observação: o.customer_note || '',
       'Motivo Cancelamento': o.cancel_reason || '',
       Total: Number(o.line_total || 0),
@@ -223,12 +223,11 @@ export default function AdminOrders() {
     {
       key: 'reseller',
       label: 'Unidade',
+      // Mostra o apelido (nome curto) da unidade; se não houver, cai no nome
+      // completo. O nome completo fica sempre no tooltip.
       render: (o) => (
-        <span
-          className="block max-w-[14rem] whitespace-normal break-words font-medium text-text-primary"
-          title={o.reseller_name || ''}
-        >
-          {o.reseller_name || '—'}
+        <span className="font-medium text-text-primary" title={o.reseller?.name || o.reseller_name || ''}>
+          {o.reseller?.short_name || o.reseller_name || '—'}
         </span>
       ),
     },
