@@ -209,7 +209,7 @@ export default function Apresentacao() {
         {/* ── Giant ghost text ── */}
         <div
           style={{
-            position: 'absolute', left: 0, right: 0, top: '18%',
+            position: 'absolute', left: 0, right: 0, top: isMobile ? '32%' : '18%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             pointerEvents: 'none', userSelect: 'none', zIndex: 2,
           }}
