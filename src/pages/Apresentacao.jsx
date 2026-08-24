@@ -34,7 +34,7 @@ const PRODUCTS = [
     bg: '#6B5B7B',
     name: 'Capa Personalizada',
     label: 'CAPA',
-    desc: 'TPU transparente e maleável.',
+    desc: 'TPU transparente e maleável. Impressão UV.',
   },
   {
     src: '/ABRIDOR.webp',
@@ -138,10 +138,10 @@ export default function Apresentacao() {
   const getRoleStyle = (idx) => {
     if (idx === center) {
       return {
-        transform: `translateX(-50%) scale(${isMobile ? 1.2 : 1.55})`,
+        transform: `translateX(-50%) scale(${isMobile ? 1.35 : 1.55})`,
         filter: 'blur(0px)', opacity: 1, zIndex: 20,
-        left: '50%', height: isMobile ? '60%' : '82%',
-        bottom: isMobile ? '32%' : '30%',
+        left: '50%', height: isMobile ? '72%' : '82%',
+        bottom: isMobile ? '28%' : '30%',
         transition: trans, willChange: 'transform, filter, opacity',
       };
     }
@@ -149,8 +149,8 @@ export default function Apresentacao() {
       return {
         transform: 'translateX(-50%) scale(1)',
         filter: 'blur(2px)', opacity: 0.85, zIndex: 10,
-        left: isMobile ? '16%' : '26%', height: isMobile ? '24%' : '42%',
-        bottom: isMobile ? '26%' : '18%',
+        left: isMobile ? '16%' : '26%', height: isMobile ? '32%' : '42%',
+        bottom: isMobile ? '24%' : '18%',
         transition: trans, willChange: 'transform, filter, opacity',
       };
     }
@@ -158,8 +158,8 @@ export default function Apresentacao() {
       return {
         transform: 'translateX(-50%) scale(1)',
         filter: 'blur(2px)', opacity: 0.85, zIndex: 10,
-        left: isMobile ? '84%' : '74%', height: isMobile ? '24%' : '42%',
-        bottom: isMobile ? '26%' : '18%',
+        left: isMobile ? '84%' : '74%', height: isMobile ? '32%' : '42%',
+        bottom: isMobile ? '24%' : '18%',
         transition: trans, willChange: 'transform, filter, opacity',
       };
     }
