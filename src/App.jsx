@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import Apresentacao from './pages/Apresentacao';
 import Storefront from './pages/Storefront';
 import StaffLogin from './pages/StaffLogin';
 import MyOrders from './pages/MyOrders';
@@ -28,6 +29,7 @@ function App() {
           </StorefrontGuard>
         }
       />
+      <Route path="/apresentacao" element={<Apresentacao />} />
       <Route path="/login" element={<StaffLogin />} />
       <Route
         path="/meus-pedidos"
