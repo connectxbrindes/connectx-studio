@@ -127,12 +127,15 @@ export function useCanvasExport() {
 
       // ── Camada 1: Fundo ──────────────────────────────────────────────
       if (!artOnly) {
-        // Cor de fundo (para produtos sem mockup e sem imagem de cor)
-        if (!hasModelMockup && !color?.image && color?.hex) {
-          ctx.fillStyle = color.hex;
-          ctx.fillRect(0, 0, containerW, containerH);
-        } else if (hasModelMockup) {
+        // Havendo qualquer foto (mockup, imagem da cor ou capa do produto),
+        // o fundo é neutro (branco). A cor sólida (hex) só entra quando NÃO
+        // há imagem nenhuma — senão a cor "vaza" nas laterais da foto (ex:
+        // caneta preta com foto de fundo branco).
+        if (backgroundUrl) {
           ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, containerW, containerH);
+        } else if (color?.hex) {
+          ctx.fillStyle = color.hex;
           ctx.fillRect(0, 0, containerW, containerH);
         }
 
