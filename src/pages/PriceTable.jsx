@@ -8,13 +8,15 @@ import Header from '../components/layout/Header';
 export default function PriceTable() {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const hidePrices = useStore((s) => s.identity?.hidePrices);
+  const identity = useStore((s) => s.identity);
   const navigate = useNavigate();
 
-  // Conta de apresentação/demo oculta preços — não deve ver a tabela.
+  // Conta de apresentação/demo não vê a tabela. Só redireciona depois que a
+  // identidade carrega (showPriceTable === false), pra não expulsar durante o
+  // carregamento inicial (quando ainda é undefined).
   useEffect(() => {
-    if (hidePrices) navigate('/', { replace: true });
-  }, [hidePrices, navigate]);
+    if (identity && identity.showPriceTable === false) navigate('/', { replace: true });
+  }, [identity, navigate]);
 
   useEffect(() => {
     fetchPriceTable()

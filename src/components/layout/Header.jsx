@@ -77,7 +77,7 @@ export default function Header() {
                       Meus Pedidos
                     </Link>
                   )}
-                  {identity?.role === 'reseller' && !identity?.hidePrices && (
+                  {identity?.role === 'reseller' && identity?.showPriceTable && (
                     <Link
                       to="/tabela-de-precos"
                       className="block px-4 py-2 text-sm text-text-primary hover:bg-bg hover:text-accent"

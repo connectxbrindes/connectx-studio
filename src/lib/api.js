@@ -621,9 +621,13 @@ export async function fetchCurrentIdentity() {
     role: data.role,
     resellerId: data.reseller_id || null,
     resellerName: data.reseller?.name || null,
-    // Preços ocultos só nas unidades marcadas (contas de apresentação/demo).
-    // As demais veem preços normalmente e têm acesso à Tabela de Preços.
-    hidePrices: Boolean(data.reseller?.hide_prices),
+    // Duas coisas separadas de propósito:
+    // - hidePrices: esconde os VALORES do fluxo (carrinho, Revisão, Meus
+    //   Pedidos) pra TODOS no Studio (decisão temporária do negócio).
+    // - showPriceTable: libera a página "Tabela de Preços" (valor que a
+    //   unidade paga), exceto nas contas de apresentação/demo.
+    hidePrices: true,
+    showPriceTable: !Boolean(data.reseller?.hide_prices),
   };
 }
 
