@@ -43,7 +43,11 @@ export async function fetchCatalog() {
         sizes:product_sizes ( id, name, sort_order ),
         variants:product_model_variants ( brand_model_id, stock_quantity )
       `)
-      .eq('status', 'active'),
+      .eq('status', 'active')
+      // Ordem controlada no painel: menor sort_order primeiro. Define também o
+      // "representante" de cada categoria no Passo 1 (o primeiro produto dela).
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
     fetchAllBrandModels(),
   ]);
 
