@@ -46,7 +46,7 @@ export const createConfiguratorSlice = (set) => ({
       selectedColor: defaultProduct ? defaultProduct.options.colors[0] : null,
       selectedSize: defaultProduct?.options.sizes ? defaultProduct.options.sizes[0] : null,
       ...deriveModelSelection(defaultProduct),
-      quantity: 1,
+      quantity: defaultProduct?.minOrderQty || 1,
       elements: [],
       selectedElementId: null,
     };
@@ -60,7 +60,7 @@ export const createConfiguratorSlice = (set) => ({
       selectedColor: product.options.colors[0],
       selectedSize: product.options.sizes ? product.options.sizes[0] : null,
       ...deriveModelSelection(product),
-      quantity: 1,
+      quantity: product.minOrderQty || 1,
       elements: [],
       selectedElementId: null,
     };
@@ -73,7 +73,10 @@ export const createConfiguratorSlice = (set) => ({
     return { selectedBrand: brand, selectedModel: modelsForBrand[0] || null };
   }),
   selectModel: (model) => set({ selectedModel: model }),
-  setQuantity: (quantity) => set({ quantity: Math.max(1, quantity) }),
+  // Trava no pedido mínimo do produto (padrão 1 quando não há mínimo).
+  setQuantity: (quantity) => set((state) => ({
+    quantity: Math.max(state.selectedProduct?.minOrderQty || 1, quantity),
+  })),
 
   resetConfigurator: () => set((state) => {
     const product = state.catalog.length > 0 ? state.catalog[0] : null;
@@ -82,7 +85,7 @@ export const createConfiguratorSlice = (set) => ({
       selectedColor: product ? product.options.colors[0] : null,
       selectedSize: product?.options.sizes ? product.options.sizes[0] : null,
       ...deriveModelSelection(product),
-      quantity: 1,
+      quantity: product?.minOrderQty || 1,
       elements: [],
       selectedElementId: null,
     };

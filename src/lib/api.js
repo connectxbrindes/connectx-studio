@@ -28,6 +28,7 @@ export async function fetchCatalog() {
         name,
         slug,
         base_price,
+        min_order_qty,
         description,
         cover_image_url,
         personalization_area,
@@ -89,6 +90,7 @@ export async function fetchCatalog() {
       id: p.id,
       name: p.name,
       price: Number(p.base_price),
+      minOrderQty: p.min_order_qty && p.min_order_qty > 0 ? p.min_order_qty : 1,
       image: p.cover_image_url,
       category: effectiveCategory,
       subcategory: p.subcategory ? { id: p.subcategory.id, name: p.subcategory.name, slug: p.subcategory.slug } : null,
@@ -295,7 +297,7 @@ export async function fetchAdminProducts() {
   const { data, error } = await supabaseAdmin
     .from('products')
     .select(`
-      id, name, slug, base_price, reseller_price, description, cover_image_url, personalization_area, status,
+      id, name, slug, base_price, reseller_price, min_order_qty, description, cover_image_url, personalization_area, status,
       category_id, subcategory_id, brand_id, has_3d_viewer, model_3d_url, uses_device_models,
       category:categories ( id, name ),
       subcategory:subcategories ( id, name, category:categories ( id, name ) ),

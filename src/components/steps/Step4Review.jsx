@@ -116,6 +116,7 @@ export default function Step4Review() {
       model: model?.name,
       modelId: model?.id,
       quantity,
+      minOrderQty: product.minOrderQty || 1,
       personalizationFee: fee,
       lineTotal,
       elements,
@@ -239,6 +240,11 @@ export default function Step4Review() {
 
           <div>
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-secondary">Quantidade</h3>
+            {product.minOrderQty > 1 && (
+              <p className="mb-3 text-sm font-medium text-amber-700">
+                Pedido mínimo deste produto: {product.minOrderQty} peças.
+              </p>
+            )}
             <div className="flex w-fit items-center rounded-lg border border-border">
               <button
                 type="button"

@@ -125,6 +125,8 @@ export default function AdminProductsList() {
       base_price: parseFloat(form.base_price),
       reseller_price:
         form.reseller_price === '' || form.reseller_price == null ? null : parseFloat(form.reseller_price),
+      min_order_qty:
+        form.min_order_qty === '' || form.min_order_qty == null ? 1 : Math.max(1, parseInt(form.min_order_qty, 10) || 1),
       status: form.status,
       category_id: form.category_id || null,
       subcategory_id: form.subcategory_id || null,

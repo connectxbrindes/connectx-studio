@@ -11,8 +11,11 @@ export const createCartSlice = (set, get) => ({
     items: state.items.filter((item) => item.id !== id),
   })),
 
+  // Trava no pedido mínimo do item (padrão 1).
   updateQuantity: (id, quantity) => set((state) => ({
-    items: state.items.map((item) => (item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item)),
+    items: state.items.map((item) =>
+      item.id === id ? { ...item, quantity: Math.max(item.minOrderQty || 1, quantity) } : item
+    ),
   })),
 
   clearCart: () => set({ items: [] }),

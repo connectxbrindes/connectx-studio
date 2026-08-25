@@ -13,6 +13,7 @@ function emptyForm() {
     description: '',
     base_price: '',
     reseller_price: '',
+    min_order_qty: 1,
     status: 'active',
     category_id: '',
     subcategory_id: '',
@@ -34,6 +35,7 @@ function formFromProduct(product) {
     description: product.description || '',
     base_price: product.base_price ?? '',
     reseller_price: product.reseller_price ?? '',
+    min_order_qty: product.min_order_qty ?? 1,
     status: product.status || 'active',
     category_id: product.category_id || '',
     subcategory_id: product.subcategory_id || '',
@@ -421,6 +423,20 @@ export default function ProductFormModal({
             />
             <p className="mt-1 text-xs text-text-secondary">
               Valor que a unidade paga — aparece na “Tabela de Preços” do Studio. Deixe vazio para não exibir.
+            </p>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-secondary">Pedido mínimo (peças)</label>
+            <input
+              type="number"
+              step="1"
+              min="1"
+              value={form.min_order_qty}
+              onChange={(e) => updateField({ min_order_qty: e.target.value })}
+              className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent"
+            />
+            <p className="mt-1 text-xs text-text-secondary">
+              Quantidade mínima por pedido. Exibida no Studio ao selecionar o produto e travada no carrinho. Use 1 para sem mínimo.
             </p>
           </div>
         </div>

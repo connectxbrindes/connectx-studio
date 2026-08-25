@@ -92,6 +92,11 @@ export default function Step2ChooseVariant() {
       <div data-tour="variacao" className="flex flex-col gap-8 bg-panel p-8 sm:p-10">
         <div className="border-b border-border pb-6">
           <h1 className="text-3xl font-bold">{product.name}</h1>
+          {product.minOrderQty > 1 && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
+              Pedido mínimo: {product.minOrderQty} peças
+            </p>
+          )}
         </div>
 
         {categoryProducts.length > 1 && (
