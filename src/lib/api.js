@@ -621,9 +621,9 @@ export async function fetchCurrentIdentity() {
     role: data.role,
     resellerId: data.reseller_id || null,
     resellerName: data.reseller?.name || null,
-    // TEMPORÁRIO: preços ocultos pra todo mundo no Studio (independente da conta).
-    // Reverter pra `Boolean(data.reseller?.hide_prices)` quando voltar a mostrar valores.
-    hidePrices: true,
+    // Preços ocultos só nas unidades marcadas (contas de apresentação/demo).
+    // As demais veem preços normalmente e têm acesso à Tabela de Preços.
+    hidePrices: Boolean(data.reseller?.hide_prices),
   };
 }
 
