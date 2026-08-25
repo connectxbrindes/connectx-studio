@@ -3,6 +3,7 @@ import Apresentacao from './pages/Apresentacao';
 import Storefront from './pages/Storefront';
 import StaffLogin from './pages/StaffLogin';
 import MyOrders from './pages/MyOrders';
+import PriceTable from './pages/PriceTable';
 import StorefrontGuard from './components/layout/StorefrontGuard';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminGuard from './pages/admin/AdminGuard';
@@ -36,6 +37,14 @@ function App() {
         element={
           <StorefrontGuard>
             <MyOrders />
+          </StorefrontGuard>
+        }
+      />
+      <Route
+        path="/tabela-de-precos"
+        element={
+          <StorefrontGuard>
+            <PriceTable />
           </StorefrontGuard>
         }
       />

@@ -123,6 +123,8 @@ export default function AdminProductsList() {
       name: form.name,
       description: form.description || null,
       base_price: parseFloat(form.base_price),
+      reseller_price:
+        form.reseller_price === '' || form.reseller_price == null ? null : parseFloat(form.reseller_price),
       status: form.status,
       category_id: form.category_id || null,
       subcategory_id: form.subcategory_id || null,

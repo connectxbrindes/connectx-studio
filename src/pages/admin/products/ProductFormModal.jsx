@@ -12,6 +12,7 @@ function emptyForm() {
     name: '',
     description: '',
     base_price: '',
+    reseller_price: '',
     status: 'active',
     category_id: '',
     subcategory_id: '',
@@ -32,6 +33,7 @@ function formFromProduct(product) {
     name: product.name || '',
     description: product.description || '',
     base_price: product.base_price ?? '',
+    reseller_price: product.reseller_price ?? '',
     status: product.status || 'active',
     category_id: product.category_id || '',
     subcategory_id: product.subcategory_id || '',
@@ -406,6 +408,20 @@ export default function ProductFormModal({
               onChange={(e) => updateField({ base_price: e.target.value })}
               className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent"
             />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-secondary">Preço do Revendedor (R$)</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.reseller_price}
+              onChange={(e) => updateField({ reseller_price: e.target.value })}
+              className="w-full rounded-lg border border-border bg-bg px-4 py-2 outline-none transition-colors focus:border-accent"
+            />
+            <p className="mt-1 text-xs text-text-secondary">
+              Valor que a unidade paga — aparece na “Tabela de Preços” do Studio. Deixe vazio para não exibir.
+            </p>
           </div>
         </div>
 

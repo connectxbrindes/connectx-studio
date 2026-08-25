@@ -115,6 +115,43 @@ export async function fetchCatalog() {
 }
 
 // ---------------------------------------------------------------------------
+// Tabela de preços do revendedor — lista de produtos ativos com o valor que a
+// unidade paga (products.reseller_price). Exibida no Studio (menu do topo).
+// Usa a sessão do Studio (reseller); produtos já são legíveis pelo catálogo.
+// ---------------------------------------------------------------------------
+
+export async function fetchPriceTable() {
+  if (!isSupabaseConfigured) return [];
+
+  const { data, error } = await supabase
+    .from('products')
+    .select(`
+      id, name, base_price, reseller_price,
+      category:categories ( id, name ),
+      subcategory:subcategories ( id, name, category:categories ( id, name ) )
+    `)
+    .eq('status', 'active')
+    .order('name');
+
+  if (error) {
+    console.error('Error fetching price table:', error);
+    return [];
+  }
+
+  return data.map((p) => {
+    const category = p.category || p.subcategory?.category || null;
+    return {
+      id: p.id,
+      name: p.name,
+      categoryId: category?.id || null,
+      categoryName: category?.name || 'Outros',
+      resellerPrice: p.reseller_price != null ? Number(p.reseller_price) : null,
+      basePrice: p.base_price != null ? Number(p.base_price) : null,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Categorias/subcategorias (usadas nos selects do formulário de produto)
 // ---------------------------------------------------------------------------
 
@@ -258,7 +295,7 @@ export async function fetchAdminProducts() {
   const { data, error } = await supabaseAdmin
     .from('products')
     .select(`
-      id, name, slug, base_price, description, cover_image_url, personalization_area, status,
+      id, name, slug, base_price, reseller_price, description, cover_image_url, personalization_area, status,
       category_id, subcategory_id, brand_id, has_3d_viewer, model_3d_url, uses_device_models,
       category:categories ( id, name ),
       subcategory:subcategories ( id, name, category:categories ( id, name ) ),
