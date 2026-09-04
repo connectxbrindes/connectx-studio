@@ -16,7 +16,13 @@ export default function Toolbar() {
     const src = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      addImageElement(src, img.naturalWidth, img.naturalHeight);
+      // Mede a proporção REAL (largura/altura) do container de edição na hora,
+      // pra a caixa da imagem nascer no formato certo (sem esticar). Térmicos
+      // não têm proporção fixa (w-full), então precisa medir.
+      const canvasEl = document.querySelector('[data-tour="canvas"]');
+      const rect = canvasEl?.getBoundingClientRect();
+      const containerAspect = rect && rect.height > 0 ? rect.width / rect.height : null;
+      addImageElement(src, img.naturalWidth, img.naturalHeight, containerAspect);
       // O blob: local (src) já basta pro canvas ao vivo — sobe o arquivo
       // original em paralelo, sem travar a edição, só pra guardar a versão
       // em qualidade máxima que vai no zip do pedido depois. Na prévia/teste

@@ -114,20 +114,21 @@ export const createConfiguratorSlice = (set) => ({
     return { elements: [...state.elements, element], selectedElementId: id };
   }),
 
-  addImageElement: (src, naturalWidth, naturalHeight) => set((state) => {
+  addImageElement: (src, naturalWidth, naturalHeight, containerAspect) => set((state) => {
     if (!state.selectedProduct) return {};
     const id = crypto.randomUUID();
     const area = state.selectedProduct.personalizationArea;
     const naturalAspect = naturalWidth && naturalHeight ? naturalWidth / naturalHeight : 1;
-    // width/height do elemento são % da largura/altura do container — só dá
-    // pra converter direto de aspect ratio em pixels quando o container é
-    // quadrado. Com mockup, o container é 331x590 (bem estreito/alto); sem
-    // compensar isso aqui, a imagem já nasce achatada, antes do cliente
-    // mexer em qualquer manípulo. Precisa bater com o aspect-[331/590] do
-    // Canvas.jsx/ProductPreview.jsx.
-    const containerAspect = state.selectedModel?.mockupImageUrl ? 331 / 590 : 1;
+    // width/height do elemento são % da largura/altura do container. Pra a
+    // caixa nascer com a MESMA proporção da imagem (sem esticar), converto
+    // usando a proporção real (largura/altura em px) do container — medida na
+    // hora e passada pelo Toolbar. Fallback: mockup usa aspect-[331/590];
+    // térmico sem medida assume quadrado.
+    const cAspect = containerAspect && containerAspect > 0
+      ? containerAspect
+      : (state.selectedModel?.mockupImageUrl ? 331 / 590 : 1);
     const width = Math.min(area.width, 25);
-    const height = (width * containerAspect) / naturalAspect;
+    const height = (width * cAspect) / naturalAspect;
     const element = {
       id,
       type: 'image',

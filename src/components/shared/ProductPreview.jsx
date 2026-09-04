@@ -75,7 +75,7 @@ const ProductPreview = forwardRef(function ProductPreview(
                 crossOrigin="anonymous"
                 alt="Elemento de personalização"
                 draggable={false}
-                className="h-full w-full object-fill"
+                className="h-full w-full object-contain"
               />
             )}
           </div>

@@ -60,11 +60,10 @@ export default function PersonalizationElement({ element, isSelected, registerRe
       alt="Elemento de personalização"
       onMouseDown={onSelect}
       draggable={false}
-      // fill (não contain): a caixa já é o tamanho real que o cliente
-      // escolheu arrastando os manípulos — contain deixaria sobrando espaço
-      // vazio (letterbox) sempre que a caixa não tivesse a proporção
-      // original da foto, dando a impressão de "não preencher tudo".
-      style={{ ...baseStyle, objectFit: 'fill', cursor: 'move', maxWidth: 'none', maxHeight: 'none' }}
+      // contain (não fill): preserva a proporção da imagem — nunca estica. A
+      // caixa nasce no formato da imagem (ver addImageElement) e o resize é
+      // proporcional (keepRatio), então normalmente não sobra espaço vazio.
+      style={{ ...baseStyle, objectFit: 'contain', cursor: 'move', maxWidth: 'none', maxHeight: 'none' }}
       className={isSelected ? 'ring-1 ring-accent' : ''}
     />
   );

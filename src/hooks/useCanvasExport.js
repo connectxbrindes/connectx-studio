@@ -185,8 +185,9 @@ export function useCanvasExport() {
         } else if (element.type === 'image' && element.src) {
           try {
             const elImg = await loadImage(element.src);
-            // object-fill: preenche toda a caixa (mesmo comportamento do CSS)
-            ctx.drawImage(elImg, elX, elY, elW, elH);
+            // object-contain: preserva a proporção (mesmo do CSS na prévia) —
+            // nunca estica a imagem dentro da caixa.
+            drawContain(ctx, elImg, elX, elY, elW, elH);
           } catch (err) {
             console.warn('Não foi possível carregar elemento de imagem:', err);
           }
