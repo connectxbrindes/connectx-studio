@@ -127,13 +127,20 @@ export const createConfiguratorSlice = (set) => ({
     const cAspect = containerAspect && containerAspect > 0
       ? containerAspect
       : (state.selectedModel?.mockupImageUrl ? 331 / 590 : 1);
-    const width = Math.min(area.width, 25);
-    const height = (width * cAspect) / naturalAspect;
+    // Começa contida na ÁREA ÚTIL (personalization_area): a maior caixa com a
+    // proporção da imagem que cabe sem estourar largura NEM altura da área.
+    // Depois o cliente pode aumentar/reduzir; só o tamanho inicial é limitado.
+    let width = Math.min(area.width, (area.height * naturalAspect) / cAspect);
+    let height = (width * cAspect) / naturalAspect;
+    if (height > area.height) {
+      height = area.height;
+      width = (height * naturalAspect) / cAspect;
+    }
     const element = {
       id,
       type: 'image',
-      x: area.x + area.width / 2 - width / 2,
-      y: area.y + area.height / 2 - height / 2,
+      x: area.x + (area.width - width) / 2,
+      y: area.y + (area.height - height) / 2,
       width,
       height,
       rotation: area.angle || 0,
