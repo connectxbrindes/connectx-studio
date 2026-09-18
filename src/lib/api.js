@@ -544,6 +544,22 @@ export async function provisionResellerLogin({ action, resellerId, email, passwo
   return { error: null };
 }
 
+/** Dispara a sincronização de estoque com o Tiny sob demanda (botão do painel).
+ * Chama a Edge Function `tiny-stock-sync`, que valida a sessão do painel
+ * (master ou staff com permissão de produtos) — nenhum segredo vai pro
+ * frontend. Retorna o resumo { atualizados, produtos_tiny_no_periodo, ... }. */
+export async function syncTinyStock() {
+  if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase não configurado') };
+
+  const { data, error } = await supabaseAdmin.functions.invoke('tiny-stock-sync', { body: {} });
+  if (error) {
+    console.error('Error syncing Tiny stock:', error);
+    return { data: null, error };
+  }
+  if (data?.error) return { data: null, error: new Error(data.error) };
+  return { data, error: null };
+}
+
 // ---------------------------------------------------------------------------
 // Usuários do Painel (staff) — gestão só pelo master
 // ---------------------------------------------------------------------------

@@ -9,15 +9,25 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // atualizamos stock_quantity em product_model_variants e product_colors.
 // Saldo negativo (vendido a descoberto no Tiny) vira 0 = esgotado.
 //
-// Só o agendador dispara: precisa do header x-sync-secret = app_config.sync_secret.
-// Requer o secret TINY_API_TOKEN.
+// Disparo: o agendador usa o header x-sync-secret = app_config.sync_secret; o
+// painel (master/staff-produtos) dispara pelo botão "Sincronizar estoque" com a
+// própria sessão (JWT no Authorization). Basta um dos dois. Requer TINY_API_TOKEN.
 
 const TINY_API = "https://api.tiny.com.br/api2";
 const JANELA_DIAS = 27; // dentro do limite de 30 dias do Tiny, com folga
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-sync-secret",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 function json(body: Record<string, unknown>, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
 
 function fmtData(d: Date): string {
@@ -26,6 +36,9 @@ function fmtData(d: Date): string {
 }
 
 Deno.serve(async (req: Request) => {
+  // Preflight do navegador (o botão do painel chama via fetch/functions.invoke).
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
   const token = Deno.env.get("TINY_API_TOKEN");
   if (!token) return json({ error: "TINY_API_TOKEN não configurado nos secrets do Supabase." });
 
@@ -34,9 +47,38 @@ Deno.serve(async (req: Request) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Autorização: só quem tem o segredo (o agendador) dispara.
+  // Autorização dupla:
+  // 1) agendador (cron) → header x-sync-secret == app_config.sync_secret;
+  // 2) painel → sessão válida de master (ou staff com permissão "products"),
+  //    validada pelo JWT do header Authorization (mesmo padrão do
+  //    create-reseller-login). Basta UM dos dois.
   const { data: cfg } = await supabase.from("app_config").select("value").eq("key", "sync_secret").maybeSingle();
-  if (cfg?.value && req.headers.get("x-sync-secret") !== cfg.value) {
+  const secretOk = cfg?.value ? req.headers.get("x-sync-secret") === cfg.value : false;
+
+  let userOk = false;
+  if (!secretOk) {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (authHeader) {
+      const caller = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: { user } } = await caller.auth.getUser();
+      if (user) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("role, permissions")
+          .eq("id", user.id)
+          .single();
+        userOk =
+          prof?.role === "master" ||
+          (prof?.role === "staff" && (prof?.permissions ?? []).includes("products"));
+      }
+    }
+  }
+
+  if (!secretOk && !userOk) {
     return json({ error: "unauthorized" }, 401);
   }
 

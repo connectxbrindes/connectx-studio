@@ -8,6 +8,7 @@ import {
   deleteProduct,
   replaceProductChildren,
   replaceProductModelVariants,
+  syncTinyStock,
 } from '../../../lib/api';
 import { slugify } from '../../../utils/slugify';
 import Button from '../../../components/ui/Button';
@@ -76,6 +77,8 @@ export default function AdminProductsList() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [saving, setSaving] = useState(false);
   const [pendingDuplicate, setPendingDuplicate] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState(null); // { type: 'ok'|'error', text }
 
   const loadData = async () => {
     setLoading(true);
@@ -95,6 +98,24 @@ export default function AdminProductsList() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleSyncStock = async () => {
+    setIsSyncing(true);
+    setSyncMsg(null);
+    const { data, error } = await syncTinyStock();
+    setIsSyncing(false);
+    if (error) {
+      setSyncMsg({ type: 'error', text: `Não foi possível sincronizar: ${error.message}` });
+      return;
+    }
+    const n = data?.atualizados ?? 0;
+    setSyncMsg({
+      type: 'ok',
+      text: n > 0 ? `Estoque sincronizado — ${n} ${n === 1 ? 'item atualizado' : 'itens atualizados'}.`
+                  : 'Sincronizado — nenhum saldo mudou desde a última vez.',
+    });
+    await loadData(); // reflete os novos saldos na lista
+  };
 
   const openCreateModal = () => {
     setEditingProduct(null);
@@ -236,8 +257,27 @@ export default function AdminProductsList() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold">Catálogo de Produtos</h2>
-        <Button onClick={openCreateModal}>Adicionar Produto</Button>
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" onClick={handleSyncStock} disabled={isSyncing}>
+            {isSyncing ? 'Sincronizando…' : '🔄 Sincronizar estoque'}
+          </Button>
+          <Button onClick={openCreateModal}>Adicionar Produto</Button>
+        </div>
       </div>
+      {syncMsg && (
+        <div
+          className={`mb-6 flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${
+            syncMsg.type === 'ok'
+              ? 'border-green-300 bg-green-50 text-green-800'
+              : 'border-accent/30 bg-accent/10 text-accent'
+          }`}
+        >
+          <span>{syncMsg.text}</span>
+          <button type="button" onClick={() => setSyncMsg(null)} className="font-medium hover:underline">
+            Fechar
+          </button>
+        </div>
+      )}
 
       <div className="mb-6 flex w-fit rounded-lg border border-border p-1">
         {STATUS_FILTERS.map((filter) => (
