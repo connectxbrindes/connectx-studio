@@ -8,7 +8,7 @@ import {
   deleteProduct,
   replaceProductChildren,
   replaceProductModelVariants,
-  syncTinyStock,
+  syncTinyStockFull,
 } from '../../../lib/api';
 import { slugify } from '../../../utils/slugify';
 import Button from '../../../components/ui/Button';
@@ -79,6 +79,7 @@ export default function AdminProductsList() {
   const [pendingDuplicate, setPendingDuplicate] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState(null); // { type: 'ok'|'error', text }
+  const [syncProgress, setSyncProgress] = useState(null); // { processados, total, esperando }
 
   const loadData = async () => {
     setLoading(true);
@@ -102,8 +103,16 @@ export default function AdminProductsList() {
   const handleSyncStock = async () => {
     setIsSyncing(true);
     setSyncMsg(null);
-    const { data, error } = await syncTinyStock();
+    setSyncProgress({ processados: 0, total: null, esperando: false });
+
+    // Leitura DIRETA de todos os SKUs no Tiny (reflete ajuste manual de saldo),
+    // em lotes com progresso. Pode levar alguns minutos.
+    const { data, error } = await syncTinyStockFull({
+      onProgress: (p) => setSyncProgress(p),
+    });
+
     setIsSyncing(false);
+    setSyncProgress(null);
     if (error) {
       setSyncMsg({ type: 'error', text: `Não foi possível sincronizar: ${error.message}` });
       return;
@@ -111,8 +120,7 @@ export default function AdminProductsList() {
     const n = data?.atualizados ?? 0;
     setSyncMsg({
       type: 'ok',
-      text: n > 0 ? `Estoque sincronizado — ${n} ${n === 1 ? 'item atualizado' : 'itens atualizados'}.`
-                  : 'Sincronizado — nenhum saldo mudou desde a última vez.',
+      text: `Estoque sincronizado com o Tiny — ${n} ${n === 1 ? 'saldo atualizado' : 'saldos atualizados'} (${data?.total ?? 0} SKUs conferidos).`,
     });
     await loadData(); // reflete os novos saldos na lista
   };
@@ -259,11 +267,24 @@ export default function AdminProductsList() {
         <h2 className="text-2xl font-bold">Catálogo de Produtos</h2>
         <div className="flex items-center gap-3">
           <Button variant="secondary" onClick={handleSyncStock} disabled={isSyncing}>
-            {isSyncing ? 'Sincronizando…' : '🔄 Sincronizar estoque'}
+            {isSyncing
+              ? syncProgress?.total
+                ? `Sincronizando… ${syncProgress.processados}/${syncProgress.total}`
+                : 'Sincronizando…'
+              : '🔄 Sincronizar estoque'}
           </Button>
           <Button onClick={openCreateModal}>Adicionar Produto</Button>
         </div>
       </div>
+      {isSyncing && (
+        <div className="mb-6 rounded-lg border border-border bg-panel px-4 py-3 text-sm text-text-secondary">
+          {syncProgress?.esperando
+            ? 'O Tiny limitou as consultas por excesso de requisições — aguardando ~1 min para continuar de onde parou…'
+            : syncProgress?.total
+              ? `Lendo saldos direto do Tiny: ${syncProgress.processados} de ${syncProgress.total} SKUs. Pode levar alguns minutos — mantenha esta aba aberta.`
+              : 'Iniciando a leitura de saldos no Tiny…'}
+        </div>
+      )}
       {syncMsg && (
         <div
           className={`mb-6 flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${

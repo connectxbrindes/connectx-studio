@@ -548,16 +548,62 @@ export async function provisionResellerLogin({ action, resellerId, email, passwo
  * Chama a Edge Function `tiny-stock-sync`, que valida a sessão do painel
  * (master ou staff com permissão de produtos) — nenhum segredo vai pro
  * frontend. Retorna o resumo { atualizados, produtos_tiny_no_periodo, ... }. */
-export async function syncTinyStock() {
+/**
+ * Um lote da sincronização de estoque com o Tiny.
+ * body: {} = modo rápido (movimentação ~27 dias); { all:true, offset, limit } =
+ * leitura direta por SKU (reflete ajuste manual de saldo), paginada.
+ */
+export async function syncTinyStock(body = {}) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase não configurado') };
 
-  const { data, error } = await supabaseAdmin.functions.invoke('tiny-stock-sync', { body: {} });
+  const { data, error } = await supabaseAdmin.functions.invoke('tiny-stock-sync', { body });
   if (error) {
     console.error('Error syncing Tiny stock:', error);
     return { data: null, error };
   }
   if (data?.error) return { data: null, error: new Error(data.error) };
   return { data, error: null };
+}
+
+/**
+ * Sincronização direta COMPLETA (todos os SKUs, direto no Tiny), em lotes.
+ * Reflete ajustes manuais de saldo feitos no painel do Tiny. Chama a função por
+ * lotes (offset/limit) até terminar; em rate limit (erro 6) espera e repete o
+ * mesmo lote. `onProgress({ processados, total, atualizados })` atualiza a UI.
+ */
+export async function syncTinyStockFull({ onProgress, lote = 25, signal } = {}) {
+  if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase não configurado') };
+
+  let offset = 0;
+  let total = null;
+  let atualizados = 0;
+  const naoEncontrados = [];
+
+  while (true) {
+    if (signal?.aborted) return { data: null, error: new Error('Cancelado') };
+
+    const { data, error } = await syncTinyStock({ all: true, offset, limit: lote });
+    if (error) return { data: null, error };
+
+    total = data.total ?? total;
+    atualizados += data.atualizados ?? 0;
+    if (Array.isArray(data.nao_encontrados)) naoEncontrados.push(...data.nao_encontrados);
+
+    if (data.rate_limited) {
+      // Tiny limitou; espera ~60s e repete a partir de onde parou.
+      onProgress?.({ processados: data.processados ?? offset, total, atualizados, esperando: true });
+      await new Promise((r) => setTimeout(r, 60000));
+      offset = data.processados ?? offset; // reprocessa o SKU que travou
+      continue;
+    }
+
+    offset = data.proximo_offset ?? total ?? offset;
+    onProgress?.({ processados: offset, total, atualizados, esperando: false });
+
+    if (data.proximo_offset == null) break;
+  }
+
+  return { data: { total, atualizados, nao_encontrados: naoEncontrados }, error: null };
 }
 
 // ---------------------------------------------------------------------------
