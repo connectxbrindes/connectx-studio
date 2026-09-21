@@ -51,7 +51,8 @@ export default function AdminOrders() {
   const [resellerFilter, setResellerFilter] = useState('all');
   const [modelFilter, setModelFilter] = useState('all');
   const [allModels, setAllModels] = useState([]);
-  const [dateFilter, setDateFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState('');
+  const [dateToFilter, setDateToFilter] = useState('');
   const [notice, setNotice] = useState('');
 
   // Relatório de produção (itens concluídos por intervalo + categoria).
@@ -174,7 +175,8 @@ export default function AdminOrders() {
     .filter((o) => statusFilter === 'all' || o.status === statusFilter)
     .filter((o) => resellerFilter === 'all' || o.reseller_id === resellerFilter)
     .filter((o) => modelFilter === 'all' || o.model?.id === modelFilter)
-    .filter((o) => !dateFilter || dateKeyLocal(o.created_at) === dateFilter);
+    .filter((o) => !dateFromFilter || dateKeyLocal(o.created_at) >= dateFromFilter)
+    .filter((o) => !dateToFilter || dateKeyLocal(o.created_at) <= dateToFilter);
 
   const columns = [
     {
@@ -349,18 +351,31 @@ export default function AdminOrders() {
           </select>
 
           <div className="flex items-center gap-1">
+            <span className="text-sm text-text-secondary">De:</span>
             <input
               type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
+              value={dateFromFilter}
+              onChange={(e) => setDateFromFilter(e.target.value)}
+              max={dateToFilter || undefined}
               className="rounded-lg border border-border px-3 py-1.5 text-sm outline-none focus:border-text-primary"
             />
-            {dateFilter && (
+            <span className="text-sm text-text-secondary">Até:</span>
+            <input
+              type="date"
+              value={dateToFilter}
+              onChange={(e) => setDateToFilter(e.target.value)}
+              min={dateFromFilter || undefined}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm outline-none focus:border-text-primary"
+            />
+            {(dateFromFilter || dateToFilter) && (
               <button
                 type="button"
-                onClick={() => setDateFilter('')}
-                aria-label="Limpar data"
-                title="Limpar data"
+                onClick={() => {
+                  setDateFromFilter('');
+                  setDateToFilter('');
+                }}
+                aria-label="Limpar período"
+                title="Limpar período"
                 className="rounded-lg border border-border px-2 py-1.5 text-sm text-text-secondary hover:text-text-primary"
               >
                 ✕
