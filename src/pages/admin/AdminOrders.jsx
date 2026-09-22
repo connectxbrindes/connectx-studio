@@ -64,6 +64,11 @@ export default function AdminOrders() {
   const [repStatus, setRepStatus] = useState('completed');
   const [repRows, setRepRows] = useState(null); // null = ainda não gerou
   const [repLoading, setRepLoading] = useState(false);
+  // Campo de data usado na última geração (status específico = data de
+  // mudança de status; "Todos" = data de criação) — fixado no momento de
+  // gerar, pra não descasar se o usuário trocar o status sem gerar de novo.
+  const [repDateField, setRepDateField] = useState('created_at');
+  const [repDateLabel, setRepDateLabel] = useState('Data');
 
   // Modal de cancelamento (pede o motivo ao mudar status para Cancelado).
   const [cancelTarget, setCancelTarget] = useState(null);
@@ -100,6 +105,8 @@ export default function AdminOrders() {
     const filtered =
       repCategory === 'all' ? rows : rows.filter((o) => orderCategory(o)?.id === repCategory);
     setRepRows(filtered);
+    setRepDateField(repStatus === 'all' ? 'created_at' : 'status_changed_at');
+    setRepDateLabel(repStatus === 'all' ? 'Data' : `Data (${STATUS_LABELS[repStatus] || repStatus})`);
     setRepLoading(false);
   };
 
@@ -107,7 +114,7 @@ export default function AdminOrders() {
     if (!repRows || repRows.length === 0) return;
     const data = repRows.map((o) => ({
       Pedido: formatOrderNumber(o),
-      Data: formatDate(o.created_at),
+      [repDateLabel]: formatDate(o[repDateField]),
       Categoria: orderCategory(o)?.name || '—',
       Produto: o.product?.name || '—',
       Modelo: o.model?.name || '',
@@ -171,12 +178,19 @@ export default function AdminOrders() {
       label: `${m.brand?.name ? `${m.brand.name} · ` : ''}${(m.name || '').trim()}`,
     }));
 
+  // Com um status específico selecionado (ex: "Concluído"), o filtro de
+  // período passa a valer pro dia em que o pedido ENTROU nesse status — assim
+  // dá pra saber a produção do dia. Com "Todos", continua pela data de criação.
+  const dateFieldForFilter = (o) => (statusFilter === 'all' ? o.created_at : o.status_changed_at);
+
   const visibleOrders = orders
     .filter((o) => statusFilter === 'all' || o.status === statusFilter)
     .filter((o) => resellerFilter === 'all' || o.reseller_id === resellerFilter)
     .filter((o) => modelFilter === 'all' || o.model?.id === modelFilter)
-    .filter((o) => !dateFromFilter || dateKeyLocal(o.created_at) >= dateFromFilter)
-    .filter((o) => !dateToFilter || dateKeyLocal(o.created_at) <= dateToFilter);
+    .filter((o) => !dateFromFilter || dateKeyLocal(dateFieldForFilter(o)) >= dateFromFilter)
+    .filter((o) => !dateToFilter || dateKeyLocal(dateFieldForFilter(o)) <= dateToFilter);
+
+  const dataColumnLabel = statusFilter === 'all' ? 'Data' : `Data (${STATUS_LABELS[statusFilter] || statusFilter})`;
 
   const columns = [
     {
@@ -295,7 +309,7 @@ export default function AdminOrders() {
         </select>
       ),
     },
-    { key: 'created_at', label: 'Data', render: (o) => formatDate(o.created_at) },
+    { key: 'created_at', label: dataColumnLabel, render: (o) => formatDate(dateFieldForFilter(o)) },
   ];
 
   return (
@@ -498,7 +512,7 @@ export default function AdminOrders() {
                   <thead className="bg-bg text-text-secondary border-b border-border">
                     <tr>
                       <th className="px-3 py-2 font-semibold">Pedido</th>
-                      <th className="px-3 py-2 font-semibold">Data</th>
+                      <th className="px-3 py-2 font-semibold">{repDateLabel}</th>
                       <th className="px-3 py-2 font-semibold">Categoria</th>
                       <th className="px-3 py-2 font-semibold">Produto</th>
                       <th className="px-3 py-2 font-semibold">Variação</th>
@@ -515,7 +529,7 @@ export default function AdminOrders() {
                     {repRows.map((o, i) => (
                       <tr key={`${o.sequence_number}-${i}`}>
                         <td className="whitespace-nowrap px-3 py-2 font-medium">{formatOrderNumber(o)}</td>
-                        <td className="whitespace-nowrap px-3 py-2 text-text-secondary">{formatDate(o.created_at)}</td>
+                        <td className="whitespace-nowrap px-3 py-2 text-text-secondary">{formatDate(o[repDateField])}</td>
                         <td className="px-3 py-2 text-text-secondary">{orderCategory(o)?.name || '—'}</td>
                         <td className="px-3 py-2">{o.product?.name || '—'}</td>
                         <td className="px-3 py-2 text-text-secondary">

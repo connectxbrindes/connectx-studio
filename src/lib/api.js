@@ -708,7 +708,7 @@ export async function fetchOrders() {
     .from('orders')
     .select(`
       id, order_number, sequence_number, customer_name, customer_contact, customer_note, quantity,
-      personalization_fee, unit_price, line_total, status, cancel_reason, created_at,
+      personalization_fee, unit_price, line_total, status, cancel_reason, created_at, status_changed_at,
       preview_image_url, original_files_zip_url, art_image_url,
       reseller_id, reseller_name,
       reseller:resellers ( name, short_name, contact_name ),
@@ -756,17 +756,23 @@ export async function fetchMyOrders() {
  * os limites (UTC) do intervalo. */
 export async function fetchProductionReport(fromISO, toISO, status = 'completed') {
   if (!isSupabaseConfigured) return [];
+
+  // Com um status específico (ex: "Concluído"), o período filtra pelo dia em
+  // que o pedido ENTROU nesse status — reflete a produção do dia, não a data
+  // em que o pedido foi criado. Com "Todos", usa a data de criação mesmo.
+  const dateColumn = status && status !== 'all' ? 'status_changed_at' : 'created_at';
+
   let query = supabaseAdmin
     .from('orders')
     .select(`
-      sequence_number, order_number, created_at, quantity, line_total, status, cancel_reason,
+      sequence_number, order_number, created_at, status_changed_at, quantity, line_total, status, cancel_reason,
       customer_name, customer_note, reseller_name,
       product:products ( name, category:categories ( id, name ), subcategory:subcategories ( category:categories ( id, name ) ) ),
       color:product_colors ( name ), size:product_sizes ( name ), model:brand_models ( name )
     `)
-    .gte('created_at', fromISO)
-    .lte('created_at', toISO)
-    .order('created_at', { ascending: true });
+    .gte(dateColumn, fromISO)
+    .lte(dateColumn, toISO)
+    .order(dateColumn, { ascending: true });
 
   if (status && status !== 'all') query = query.eq('status', status);
 
