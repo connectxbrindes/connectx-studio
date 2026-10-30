@@ -14,6 +14,10 @@ function emptyForm() {
     base_price: '',
     reseller_price: '',
     min_order_qty: 1,
+    ship_weight_kg: '',
+    ship_height_cm: '',
+    ship_width_cm: '',
+    ship_length_cm: '',
     status: 'active',
     category_id: '',
     subcategory_id: '',
@@ -36,6 +40,10 @@ function formFromProduct(product) {
     base_price: product.base_price ?? '',
     reseller_price: product.reseller_price ?? '',
     min_order_qty: product.min_order_qty ?? 1,
+    ship_weight_kg: product.ship_weight_kg ?? '',
+    ship_height_cm: product.ship_height_cm ?? '',
+    ship_width_cm: product.ship_width_cm ?? '',
+    ship_length_cm: product.ship_length_cm ?? '',
     status: product.status || 'active',
     category_id: product.category_id || '',
     subcategory_id: product.subcategory_id || '',
@@ -439,6 +447,33 @@ export default function ProductFormModal({
               Quantidade mínima por pedido. Exibida no Studio ao selecionar o produto e travada no carrinho. Use 1 para sem mínimo.
             </p>
           </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-text-secondary">Embalagem para frete (loja virtual)</label>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ['ship_weight_kg', 'Peso (kg)', '0.01'],
+              ['ship_height_cm', 'Altura (cm)', '0.1'],
+              ['ship_width_cm', 'Largura (cm)', '0.1'],
+              ['ship_length_cm', 'Comprimento (cm)', '0.1'],
+            ].map(([key, label, step]) => (
+              <label key={key} className="flex flex-col gap-1 text-xs text-text-secondary">
+                {label}
+                <input
+                  type="number"
+                  min="0"
+                  step={step}
+                  value={form[key]}
+                  onChange={(e) => updateField({ [key]: e.target.value })}
+                  className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text-primary outline-none transition-colors focus:border-accent"
+                />
+              </label>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-text-secondary">
+            Medidas de 1 unidade já embalada, usadas no cálculo do frete. Em branco = embalagem padrão da loja.
+          </p>
         </div>
 
         <div>

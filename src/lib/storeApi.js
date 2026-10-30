@@ -20,6 +20,7 @@ const ERROR_MESSAGES = {
   TAMANHO_INVALIDO: 'Tamanho do código inválido (6 a 16).',
   PREFIXO_INVALIDO: 'Prefixo inválido (até 6 letras/números).',
   PRODUTO_OBRIGATORIO: 'Escolha pelo menos um produto.',
+  ENDERECO_INCOMPLETO: 'Preencha o endereço completo para entrega.',
 };
 
 export function friendlyError(error, fallback = 'Algo deu errado. Tente novamente.') {
@@ -82,8 +83,58 @@ export async function fetchCampaignProductIds() {
   return (data || []).map((row) => (typeof row === 'string' ? row : row.campaign_product_ids));
 }
 
-/** Grava o pedido da loja. Preços/descontos são recalculados no banco. */
-export async function submitStoreOrder(cartItems, { token, customer }) {
+/** O que está ligado na loja: frete pelos Correios (Melhor Envio), pagamento
+ * online (Mercado Pago) e o endereço de retirada. */
+export async function fetchStoreConfig() {
+  const fallback = { shipping: false, payment: false, pickupAddress: '' };
+  if (!isSupabaseConfigured) return fallback;
+  const [{ data: fnData }, { data: settings }] = await Promise.all([
+    supabaseStore.functions.invoke('store-checkout', { body: { action: 'config' } }),
+    supabaseStore.from('store_settings').select('pickup_address, shipping_enabled, origin_cep').eq('id', 1).maybeSingle(),
+  ]);
+  return {
+    shipping: Boolean(fnData?.shipping && settings?.shipping_enabled && settings?.origin_cep),
+    payment: Boolean(fnData?.payment),
+    pickupAddress: settings?.pickup_address || '',
+  };
+}
+
+/** Cota PAC/SEDEX pro CEP. items = itens do carrinho. */
+export async function quoteShipping(cep, items) {
+  const { data, error } = await supabaseStore.functions.invoke('store-checkout', {
+    body: {
+      action: 'quote',
+      cep,
+      items: items.map((it) => ({
+        product_id: it.productId,
+        quantity: it.quantity,
+        personalized: Boolean(it.elements && it.elements.length > 0),
+      })),
+    },
+  });
+  if (error) return { error: 'Não foi possível calcular o frete agora.' };
+  if (data?.error) return { error: data.error };
+  return { options: data.options || [] };
+}
+
+/** Endereço pelo CEP (ViaCEP, público). */
+export async function lookupCep(cep) {
+  const digits = (cep || '').replace(/\D/g, '');
+  if (digits.length !== 8) return null;
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+    const data = await res.json();
+    if (data.erro) return null;
+    return { street: data.logradouro || '', district: data.bairro || '', city: data.localidade || '', state: data.uf || '' };
+  } catch {
+    return null;
+  }
+}
+
+/** Finaliza a compra: sobe as artes, grava o pedido e (se houver valor a
+ * pagar) recebe o link do Mercado Pago. Preço e frete são recalculados no
+ * servidor. Retorno: { status: 'payment'|'free'|'manual', init_point?, order_numbers, total }. */
+export async function submitStoreOrder(cartItems, { token, customer, delivery, address, shippingServiceId }) {
   const rows = await Promise.all(
     cartItems.map(async (item) => {
       const { previewUrl, zipUrl, artUrl } = await buildOrderAssets(item, supabaseStore);
@@ -101,12 +152,19 @@ export async function submitStoreOrder(cartItems, { token, customer }) {
     })
   );
 
-  const { data, error } = await supabaseStore.rpc('place_store_order', {
-    order_rows: rows,
-    p_token: token || null,
-    p_customer: customer,
+  const { data, error } = await supabaseStore.functions.invoke('store-checkout', {
+    body: {
+      action: 'checkout',
+      order_rows: rows,
+      token: token || null,
+      customer,
+      delivery,
+      address: delivery === 'shipping' ? address : null,
+      shipping_service_id: shippingServiceId || null,
+    },
   });
-  if (error) return { error: friendlyError(error, 'Não foi possível enviar o pedido. Tente novamente.') };
+  if (error) return { error: 'Não foi possível enviar o pedido. Tente novamente.' };
+  if (data?.error) return { error: data.error };
   return { error: null, result: data };
 }
 
@@ -172,5 +230,18 @@ export async function findToken(code) {
 
 export async function setTokenStatus(tokenId, status) {
   const { error } = await supabaseAdmin.from('campaign_tokens').update({ status }).eq('id', tokenId).neq('status', 'used');
+  return { error };
+}
+
+export async function fetchStoreSettings() {
+  const { data } = await supabaseAdmin.from('store_settings').select('*').eq('id', 1).maybeSingle();
+  return data;
+}
+
+export async function saveStoreSettings(payload) {
+  const { error } = await supabaseAdmin
+    .from('store_settings')
+    .update({ ...payload, updated_at: new Date().toISOString() })
+    .eq('id', 1);
   return { error };
 }

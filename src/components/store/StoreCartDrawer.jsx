@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { formatCurrency } from '../../utils/price';
-import { checkCampaignToken, submitStoreOrder } from '../../lib/storeApi';
+import { checkCampaignToken, fetchStoreConfig, lookupCep, quoteShipping, submitStoreOrder } from '../../lib/storeApi';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import UpsellPopup from './UpsellPopup';
 
 const EXTRA_DISCOUNT = 0.1;
 const round2 = (n) => Math.round(n * 100) / 100;
+const LAST_PAYMENT_KEY = 'store-last-payment';
 
 /** Mesma regra do banco (place_store_order): com token válido, 1 unidade do
  * primeiro item elegível sai grátis e os demais itens têm 10% de desconto.
@@ -23,11 +24,18 @@ function computeTotals(items, token) {
     if (i === giftIndex) giftDiscount += it.lineTotal / Math.max(it.quantity, 1);
     else extraDiscount += round2(it.lineTotal * EXTRA_DISCOUNT);
   });
-  return { giftIndex, subtotal, giftDiscount, extraDiscount, total: subtotal - giftDiscount - extraDiscount };
+  return { giftIndex, subtotal, giftDiscount, extraDiscount, itemsTotal: subtotal - giftDiscount - extraDiscount };
 }
 
+const formatCep = (v) => {
+  const d = v.replace(/\D/g, '').slice(0, 8);
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+};
+
 const inputClass =
-  'rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-text-primary placeholder:text-text-secondary';
+  'w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-text-primary placeholder:text-text-secondary';
+
+const EMPTY_ADDRESS = { cep: '', street: '', number: '', complement: '', district: '', city: '', state: '' };
 
 export default function StoreCartDrawer() {
   const isOpen = useStore((s) => s.isDrawerOpen);
@@ -43,16 +51,28 @@ export default function StoreCartDrawer() {
   const campaignProductIds = useStore((s) => s.campaignProductIds);
   const upsellDismissed = useStore((s) => s.upsellDismissed);
 
+  const [config, setConfig] = useState({ shipping: false, payment: false, pickupAddress: '' });
   const [tokenInput, setTokenInput] = useState('');
   const [token, setToken] = useState(null);
   const [tokenMessage, setTokenMessage] = useState('');
   const [checkingToken, setCheckingToken] = useState(false);
+
+  const [delivery, setDelivery] = useState('pickup');
+  const [address, setAddress] = useState(EMPTY_ADDRESS);
+  const [quote, setQuote] = useState(null); // { options } | null
+  const [quoteError, setQuoteError] = useState('');
+  const [quoting, setQuoting] = useState(false);
+  const [serviceId, setServiceId] = useState(null);
+
   const [phone, setPhone] = useState('');
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
-  const [pendingCheckout, setPendingCheckout] = useState(false);
+
+  useEffect(() => {
+    fetchStoreConfig().then(setConfig);
+  }, []);
 
   useEffect(() => {
     if (customer?.phone) setPhone((p) => p || customer.phone);
@@ -65,8 +85,18 @@ export default function StoreCartDrawer() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, closeDrawer]);
 
+  // Carrinho mudou (item/quantidade) → a cotação antiga não vale mais.
+  const cartKey = items.map((it) => `${it.productId}:${it.quantity}`).join('|');
+  useEffect(() => {
+    setQuote(null);
+    setServiceId(null);
+  }, [cartKey]);
+
   const totals = useMemo(() => computeTotals(items, token), [items, token]);
   const tokenWithoutProduct = token && totals.giftIndex === -1;
+  const selectedService = quote?.options?.find((o) => o.id === serviceId) || null;
+  const shippingPrice = delivery === 'shipping' ? selectedService?.price || 0 : 0;
+  const grandTotal = Math.max(totals.itemsTotal, 0) + shippingPrice;
 
   // Pop-up de 10%: carrinho aberto contendo só o(s) brinde(s) da campanha.
   const giftItem = items.find((it) => campaignProductIds.includes(it.productId));
@@ -95,6 +125,30 @@ export default function StoreCartDrawer() {
     setTokenMessage('');
   };
 
+  const handleQuote = async (e) => {
+    e?.preventDefault();
+    const digits = address.cep.replace(/\D/g, '');
+    if (digits.length !== 8) {
+      setQuoteError('Digite um CEP com 8 números.');
+      return;
+    }
+    setQuoting(true);
+    setQuoteError('');
+    setQuote(null);
+    setServiceId(null);
+    const [result, found] = await Promise.all([quoteShipping(digits, items), lookupCep(digits)]);
+    setQuoting(false);
+    if (found) setAddress((a) => ({ ...a, ...found, street: found.street || a.street, district: found.district || a.district }));
+    if (result.error) {
+      setQuoteError(result.error);
+      return;
+    }
+    setQuote(result);
+    if (result.options[0]) setServiceId(result.options[0].id);
+  };
+
+  const updateAddress = (field) => (e) => setAddress({ ...address, [field]: e.target.value });
+
   const doCheckout = async () => {
     setError('');
     if (tokenWithoutProduct) {
@@ -105,48 +159,71 @@ export default function StoreCartDrawer() {
       setError('Informe um celular com DDD para contato.');
       return;
     }
+    if (delivery === 'shipping') {
+      if (!selectedService) {
+        setError('Calcule o frete pelo CEP e escolha PAC ou SEDEX.');
+        return;
+      }
+      if (!address.street.trim() || !address.number.trim() || !address.city.trim() || !address.state.trim()) {
+        setError('Preencha rua, número, cidade e UF para a entrega.');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     const { error: submitError, result } = await submitStoreOrder(items, {
       token: token?.code || null,
       customer: { name: customer.name, phone: phone.trim(), note: note.trim() },
+      delivery,
+      address: { ...address, cep: address.cep.replace(/\D/g, '') },
+      shippingServiceId: selectedService?.id,
     });
-    setIsSubmitting(false);
     if (submitError) {
+      setIsSubmitting(false);
       setError(submitError);
-      // Token pode ter sido usado nesse meio tempo — força nova validação.
       if (/código/i.test(submitError)) setToken(null);
+      if (/frete/i.test(submitError)) setQuote(null);
       return;
     }
-    setSuccess({ orderNumbers: result?.order_numbers || [], total: Number(result?.total || 0) });
+
     clearCart();
     setToken(null);
     setTokenInput('');
     setNote('');
+
+    if (result.status === 'payment' && result.init_point) {
+      // Guarda o link pra "tentar de novo" se o pagamento falhar na volta.
+      try {
+        localStorage.setItem(LAST_PAYMENT_KEY, JSON.stringify({ url: result.init_point, orders: result.order_numbers }));
+      } catch { /* sem storage, segue */ }
+      window.location.href = result.init_point;
+      return;
+    }
+    setIsSubmitting(false);
+    setSuccess({ status: result.status, orderNumbers: result.order_numbers || [], total: Number(result.total || 0) });
   };
 
   const handleCheckout = () => {
     if (!customer) {
-      setPendingCheckout(true);
       openStoreAuth();
       return;
     }
     doCheckout();
   };
 
-  // Depois do cadastro/login aberto pelo "Finalizar", segue direto pro pedido
-  // se o telefone já veio do cadastro.
-  useEffect(() => {
-    if (pendingCheckout && customer) {
-      setPendingCheckout(false);
-      if (customer.phone) setPhone((p) => p || customer.phone);
-    }
-  }, [pendingCheckout, customer]);
-
   const handleNewOrder = () => {
     setSuccess(null);
     closeDrawer();
     resetConfigurator();
     resetWizard();
+  };
+
+  const successMessage = () => {
+    if (!success) return '';
+    if (success.status === 'free') {
+      return 'Seu brinde já foi para produção. Avisaremos pelo seu celular quando estiver pronto para retirada na loja.';
+    }
+    return `Total: ${formatCurrency(success.total)}. Nossa equipe vai entrar em contato pelo seu celular para combinar o pagamento.`;
   };
 
   return (
@@ -186,11 +263,7 @@ export default function StoreCartDrawer() {
               {success.orderNumbers.length > 1 ? 'Números dos pedidos: ' : 'Número do pedido: '}
               <span className="font-mono font-semibold text-text-primary">{success.orderNumbers.join(', ')}</span>
             </p>
-            <p className="text-sm text-text-secondary">
-              {success.total > 0
-                ? `Total a pagar: ${formatCurrency(success.total)}. Nossa equipe vai entrar em contato pelo seu celular para combinar o pagamento e a retirada na loja.`
-                : 'Seu brinde já foi para produção. Avisaremos pelo seu celular quando estiver pronto para retirada na loja.'}
-            </p>
+            <p className="text-sm text-text-secondary">{successMessage()}</p>
             <Button onClick={handleNewOrder} className="mt-2">Personalizar outro produto</Button>
           </div>
         ) : items.length === 0 ? (
@@ -238,7 +311,7 @@ export default function StoreCartDrawer() {
               })}
             </ul>
 
-            <div className="flex flex-col gap-4 border-t border-border px-6 py-5">
+            <div className="flex flex-col gap-5 border-t border-border px-6 py-5">
               {/* Token do cartão da campanha */}
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-semibold">Código do cartão (brinde)</p>
@@ -274,13 +347,62 @@ export default function StoreCartDrawer() {
               </div>
 
               {/* Entrega */}
-              <div className="flex flex-col gap-1 text-sm">
+              <div className="flex flex-col gap-2 text-sm">
                 <p className="font-semibold">Entrega</p>
-                <label className="flex items-center gap-2 rounded-lg border border-text-primary px-3 py-2">
-                  <input type="radio" checked readOnly />
-                  <span className="flex-1">Retirar na loja</span>
+                <label className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 ${delivery === 'pickup' ? 'border-text-primary' : 'border-border'}`}>
+                  <input type="radio" name="delivery" className="mt-1" checked={delivery === 'pickup'} onChange={() => setDelivery('pickup')} />
+                  <span className="flex-1">
+                    Retirar na loja
+                    {config.pickupAddress && <span className="block text-xs text-text-secondary">{config.pickupAddress}</span>}
+                  </span>
                   <span className="font-semibold text-green-600">Grátis</span>
                 </label>
+                {config.shipping && (
+                  <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 ${delivery === 'shipping' ? 'border-text-primary' : 'border-border'}`}>
+                    <input type="radio" name="delivery" checked={delivery === 'shipping'} onChange={() => setDelivery('shipping')} />
+                    <span className="flex-1">Receber em casa (Correios)</span>
+                    {selectedService && delivery === 'shipping' && <span className="font-semibold">{formatCurrency(selectedService.price)}</span>}
+                  </label>
+                )}
+
+                {delivery === 'shipping' && (
+                  <div className="flex flex-col gap-3 rounded-lg bg-bg p-3">
+                    <form onSubmit={handleQuote} className="flex gap-2">
+                      <input
+                        inputMode="numeric"
+                        autoComplete="postal-code"
+                        value={address.cep}
+                        onChange={(e) => setAddress({ ...address, cep: formatCep(e.target.value) })}
+                        placeholder="Seu CEP"
+                        className={`${inputClass} flex-1 bg-panel`}
+                      />
+                      <Button type="submit" variant="secondary" className="px-4 py-2 text-sm" disabled={quoting}>
+                        {quoting ? 'Calculando…' : 'Calcular frete'}
+                      </Button>
+                    </form>
+                    {quoteError && <p className="text-xs text-accent">{quoteError}</p>}
+                    {quote?.options?.map((o) => (
+                      <label key={o.id} className={`flex cursor-pointer items-center gap-2 rounded-lg border bg-panel px-3 py-2 ${serviceId === o.id ? 'border-text-primary' : 'border-border'}`}>
+                        <input type="radio" name="service" checked={serviceId === o.id} onChange={() => setServiceId(o.id)} />
+                        <span className="flex-1">
+                          {o.company} {o.name}
+                          {o.days ? <span className="block text-xs text-text-secondary">até {o.days} dias úteis + produção</span> : null}
+                        </span>
+                        <span className="font-semibold">{formatCurrency(o.price)}</span>
+                      </label>
+                    ))}
+                    {quote && (
+                      <div className="grid grid-cols-6 gap-2">
+                        <input value={address.street} onChange={updateAddress('street')} placeholder="Rua / Avenida" autoComplete="address-line1" className={`${inputClass} col-span-4 bg-panel`} />
+                        <input value={address.number} onChange={updateAddress('number')} placeholder="Nº" className={`${inputClass} col-span-2 bg-panel`} />
+                        <input value={address.complement} onChange={updateAddress('complement')} placeholder="Complemento (opcional)" autoComplete="address-line2" className={`${inputClass} col-span-6 bg-panel`} />
+                        <input value={address.district} onChange={updateAddress('district')} placeholder="Bairro" className={`${inputClass} col-span-6 bg-panel`} />
+                        <input value={address.city} onChange={updateAddress('city')} placeholder="Cidade" autoComplete="address-level2" className={`${inputClass} col-span-4 bg-panel`} />
+                        <input value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value.toUpperCase().slice(0, 2) })} placeholder="UF" autoComplete="address-level1" className={`${inputClass} col-span-2 bg-panel`} />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Cliente */}
@@ -331,18 +453,31 @@ export default function StoreCartDrawer() {
                 </div>
               )}
               <div className="flex justify-between">
-                <dt className="text-text-secondary">Entrega (retirada na loja)</dt>
-                <dd className="text-green-600">Grátis</dd>
+                <dt className="text-text-secondary">
+                  {delivery === 'shipping' ? `Frete${selectedService ? ` (${selectedService.name})` : ''}` : 'Retirada na loja'}
+                </dt>
+                <dd className={shippingPrice > 0 ? '' : 'text-green-600'}>
+                  {delivery === 'shipping' && !selectedService ? 'calcule pelo CEP' : shippingPrice > 0 ? formatCurrency(shippingPrice) : 'Grátis'}
+                </dd>
               </div>
               <div className="mt-1 flex justify-between text-lg font-bold">
                 <dt>Total</dt>
-                <dd>{formatCurrency(Math.max(totals.total, 0))}</dd>
+                <dd>{formatCurrency(grandTotal)}</dd>
               </div>
             </dl>
             {error && <p className="mb-3 text-sm text-accent">{error}</p>}
             <Button className="w-full" disabled={items.length === 0 || isSubmitting} onClick={handleCheckout}>
-              {isSubmitting ? 'Enviando pedido…' : customer ? 'Finalizar compra' : 'Cadastrar e finalizar'}
+              {isSubmitting
+                ? 'Enviando pedido…'
+                : !customer
+                  ? 'Cadastrar e finalizar'
+                  : grandTotal > 0 && config.payment
+                    ? 'Ir para o pagamento'
+                    : 'Finalizar compra'}
             </Button>
+            {customer && grandTotal > 0 && config.payment && (
+              <p className="mt-2 text-center text-xs text-text-secondary">Pagamento seguro pelo Mercado Pago (Pix, cartão ou boleto).</p>
+            )}
           </div>
         )}
       </aside>
