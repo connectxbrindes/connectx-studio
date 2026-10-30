@@ -429,18 +429,20 @@ export async function uploadProductModel3D(file) {
 // (Sessão do Studio — quem sobe é a unidade logada.)
 // ---------------------------------------------------------------------------
 
-async function uploadOrderAsset(folder, blob, extension) {
+// `client` = sessão que sobe o arquivo (Studio por padrão; a loja virtual
+// passa a sessão do cliente de varejo).
+async function uploadOrderAsset(folder, blob, extension, client = supabase) {
   if (!isSupabaseConfigured) return { url: null, error: new Error('Supabase não configurado') };
 
   const path = `${folder}/${crypto.randomUUID()}.${extension}`;
-  const { error: uploadError } = await supabase.storage.from('order-assets').upload(path, blob);
+  const { error: uploadError } = await client.storage.from('order-assets').upload(path, blob);
 
   if (uploadError) {
     console.error(`Error uploading order asset (${folder}):`, uploadError);
     return { url: null, error: uploadError };
   }
 
-  const { data } = supabase.storage.from('order-assets').getPublicUrl(path);
+  const { data } = client.storage.from('order-assets').getPublicUrl(path);
   return { url: data.publicUrl, error: null };
 }
 
@@ -452,18 +454,18 @@ export async function uploadOrderOriginalImage(file) {
 }
 
 /** Sobe a prévia (PNG) composta pelo Studio, pra exibir no painel de Pedidos. */
-export async function uploadOrderPreview(blob) {
-  return uploadOrderAsset('previews', blob, 'png');
+export async function uploadOrderPreview(blob, client) {
+  return uploadOrderAsset('previews', blob, 'png', client);
 }
 
 /** Sobe o zip com as imagens originais de um item do pedido. */
-export async function uploadOrderOriginalsZip(blob) {
-  return uploadOrderAsset('zips', blob, 'zip');
+export async function uploadOrderOriginalsZip(blob, client) {
+  return uploadOrderAsset('zips', blob, 'zip', client);
 }
 
 /** Sobe a arte montada (PNG transparente, sem mockup) que a produção usa direto. */
-export async function uploadOrderArt(blob) {
-  return uploadOrderAsset('art', blob, 'png');
+export async function uploadOrderArt(blob, client) {
+  return uploadOrderAsset('art', blob, 'png', client);
 }
 
 // ---------------------------------------------------------------------------
@@ -808,7 +810,7 @@ export async function cancelOrder(orderId, reason) {
  * com as imagens originais (qualidade máxima) de cada elemento de imagem —
  * pra aparecer completo no painel de Pedidos. Uma falha aqui não deve travar
  * o checkout, só deixa aquele campo vazio no pedido. */
-async function buildOrderAssets(item) {
+export async function buildOrderAssets(item, client) {
   let previewUrl = null;
   let zipUrl = null;
   let artUrl = null;
@@ -816,7 +818,7 @@ async function buildOrderAssets(item) {
   try {
     if (item.thumbnail) {
       const previewBlob = await (await fetch(item.thumbnail)).blob();
-      const { url } = await uploadOrderPreview(previewBlob);
+      const { url } = await uploadOrderPreview(previewBlob, client);
       previewUrl = url;
     }
   } catch (err) {
@@ -826,7 +828,7 @@ async function buildOrderAssets(item) {
   try {
     if (item.artImage) {
       const artBlob = await (await fetch(item.artImage)).blob();
-      const { url } = await uploadOrderArt(artBlob);
+      const { url } = await uploadOrderArt(artBlob, client);
       artUrl = url;
     }
   } catch (err) {
@@ -834,18 +836,23 @@ async function buildOrderAssets(item) {
   }
 
   try {
-    const imageElements = (item.elements || []).filter((el) => el.type === 'image' && el.originalImageUrl);
+    // Na loja virtual o cliente ainda não está logado enquanto personaliza,
+    // então o original não sobe na hora — usa o blob: local (`src`) no checkout.
+    const sourceOf = (el) => el.originalImageUrl || (client && el.src?.startsWith('blob:') ? el.src : null);
+    const imageElements = (item.elements || []).filter((el) => el.type === 'image' && sourceOf(el));
     if (imageElements.length > 0) {
       const zip = new JSZip();
       await Promise.all(
         imageElements.map(async (el, index) => {
-          const blob = await (await fetch(el.originalImageUrl)).blob();
-          const extension = el.originalImageUrl.split('.').pop().split('?')[0] || 'png';
+          const blob = await (await fetch(sourceOf(el))).blob();
+          const extension = el.originalImageUrl
+            ? el.originalImageUrl.split('.').pop().split('?')[0] || 'png'
+            : (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
           zip.file(`imagem-${index + 1}.${extension}`, blob);
         })
       );
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const { url } = await uploadOrderOriginalsZip(zipBlob);
+      const { url } = await uploadOrderOriginalsZip(zipBlob, client);
       zipUrl = url;
     }
   } catch (err) {

@@ -3,6 +3,8 @@ import { useStore } from '../store/useStore';
 import Header from '../components/layout/Header';
 import StepIndicator from '../components/layout/StepIndicator';
 import CartDrawer from '../components/layout/CartDrawer';
+import StoreCartDrawer from '../components/store/StoreCartDrawer';
+import StoreAuthModal from '../components/store/StoreAuthModal';
 import StudioTour from '../components/studio/StudioTour';
 import Toast from '../components/ui/Toast';
 import Step1ChooseProduct from '../components/steps/Step1ChooseProduct';
@@ -18,7 +20,11 @@ const STEP_COMPONENTS = {
   4: Step4Review,
 };
 
-export default function Storefront() {
+// `channel="store"` = loja virtual de varejo (/store): carrinho com token,
+// preços visíveis e cadastro do cliente no checkout.
+export default function Storefront({ channel = 'studio' }) {
+  const isStore = channel === 'store';
+  const setChannel = useStore((s) => s.setChannel);
   const currentStep = useStore((s) => s.currentStep);
   const catalogLoaded = useStore((s) => s.catalogLoaded);
   const setCatalog = useStore((s) => s.setCatalog);
@@ -37,6 +43,10 @@ export default function Storefront() {
   }, [setPreviewMode, resetWizard]);
 
   useEffect(() => {
+    setChannel(channel);
+  }, [channel, setChannel]);
+
+  useEffect(() => {
     let mounted = true;
     async function loadData() {
       const data = await fetchCatalog();
@@ -52,7 +62,7 @@ export default function Storefront() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header />
+      <Header channel={channel} />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-6 py-4 sm:px-10">
         {!catalogLoaded ? (
           <div className="flex h-64 items-center justify-center">
@@ -72,7 +82,8 @@ export default function Storefront() {
           </>
         )}
       </main>
-      <CartDrawer />
+      {isStore ? <StoreCartDrawer /> : <CartDrawer />}
+      {isStore && <StoreAuthModal />}
       <StudioTour />
       <Toast />
     </div>

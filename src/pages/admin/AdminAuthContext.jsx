@@ -23,6 +23,7 @@ const SECTION_ROUTES = [
   { section: 'orders', path: '/admin/pedidos' },
   { section: 'products', path: '/admin/produtos' },
   { section: 'resellers', path: '/admin/revendedores' },
+  { section: 'tokens', path: '/admin/tokens' },
 ];
 
 /** Redireciona /admin pra primeira seção que o usuário tem permissão (master

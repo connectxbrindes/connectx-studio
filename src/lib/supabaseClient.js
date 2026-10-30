@@ -20,3 +20,5 @@ const makeClient = (storageKey) =>
 export const supabase = makeClient('sb-studio-auth');
 // Painel de gerenciamento (master)
 export const supabaseAdmin = makeClient('sb-admin-auth');
+// Loja virtual de varejo (/store) — cliente final, sessão própria
+export const supabaseStore = makeClient('sb-store-auth');

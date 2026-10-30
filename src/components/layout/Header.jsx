@@ -1,8 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
+import { storeSignOut } from '../../lib/storeApi';
 
-export default function Header() {
+export default function Header({ channel = 'studio' }) {
+  const isStore = channel === 'store';
+  const storeCustomer = useStore((s) => s.storeCustomer);
+  const openStoreAuth = useStore((s) => s.openStoreAuth);
   const count = useStore((s) => s.cartCount());
   const openDrawer = useStore((s) => s.openDrawer);
   const identity = useStore((s) => s.identity);
@@ -13,8 +17,13 @@ export default function Header() {
   const menuRef = useRef(null);
 
   useEffect(() => {
+    // Loja virtual: sem identidade de unidade (preços visíveis, sem menu de revenda).
+    if (isStore) {
+      useStore.setState({ identity: null });
+      return;
+    }
     loadIdentity();
-  }, [loadIdentity]);
+  }, [loadIdentity, isStore]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -26,16 +35,27 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const identityLabel = identity?.role === 'master' ? 'Master' : identity?.resellerName;
+  const identityLabel = isStore
+    ? storeCustomer && (storeCustomer.name?.split(' ')[0] || storeCustomer.email)
+    : identity?.role === 'master' ? 'Master' : identity?.resellerName;
 
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-panel px-6 py-5 sm:px-10">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between">
-        <Link to="/" className="text-2xl font-extrabold tracking-wide text-text-primary">
+        <Link to={isStore ? '/store' : '/'} className="text-2xl font-extrabold tracking-wide text-text-primary">
           STUDIO<span className="text-accent">.</span>
         </Link>
         <div className="flex items-center gap-4">
-          {identityLabel && (
+          {isStore && !storeCustomer && (
+            <button
+              type="button"
+              onClick={openStoreAuth}
+              className="text-sm font-semibold text-text-primary transition-colors hover:text-accent"
+            >
+              Entrar
+            </button>
+          )}
+          {(identityLabel || isStore) && (
             <button
               type="button"
               onClick={() => window.dispatchEvent(new Event('studio:open-tour'))}
@@ -90,11 +110,12 @@ export default function Header() {
                     type="button"
                     onClick={() => {
                       setIsMenuOpen(false);
-                      signOutIdentity();
+                      if (isStore) storeSignOut();
+                      else signOutIdentity();
                     }}
                     className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-bg"
                   >
-                    Sair do Studio
+                    {isStore ? 'Sair' : 'Sair do Studio'}
                   </button>
                 </div>
               )}

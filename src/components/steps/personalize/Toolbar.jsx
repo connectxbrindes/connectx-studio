@@ -28,6 +28,9 @@ export default function Toolbar() {
       // em qualidade máxima que vai no zip do pedido depois. Na prévia/teste
       // do painel não há pedido, então não sobe nada (evita arquivo órfão).
       if (useStore.getState().previewMode) return;
+      // Loja virtual: cliente ainda anônimo (upload exige login) — o original
+      // sobe no checkout a partir do blob local.
+      if (useStore.getState().channel === 'store') return;
       const newElementId = useStore.getState().selectedElementId;
       uploadOrderOriginalImage(file).then(({ url }) => {
         if (url) updateElement(newElementId, { originalImageUrl: url });

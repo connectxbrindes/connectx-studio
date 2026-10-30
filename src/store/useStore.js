@@ -4,6 +4,7 @@ import { createWizardSlice } from './slices/wizardSlice';
 import { createConfiguratorSlice } from './slices/configuratorSlice';
 import { createCartSlice } from './slices/cartSlice';
 import { createIdentitySlice } from './slices/identitySlice';
+import { createStoreSlice } from './slices/storeSlice';
 import { idbStorage } from './idbStorage';
 
 export const useStore = create(
@@ -13,6 +14,7 @@ export const useStore = create(
       ...createConfiguratorSlice(set, get),
       ...createCartSlice(set, get),
       ...createIdentitySlice(set, get),
+      ...createStoreSlice(set, get),
     }),
     {
       name: 'personalization-studio-cart-v2',
@@ -24,3 +26,6 @@ export const useStore = create(
     }
   )
 );
+
+// Só em desenvolvimento: acesso ao estado pelo console (debug/testes).
+if (import.meta.env.DEV && typeof window !== 'undefined') window.__store = useStore;

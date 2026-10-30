@@ -8,6 +8,7 @@ const PERMISSIONS = [
   { value: 'products', label: 'Produtos' },
   { value: 'resellers', label: 'Revendedores' },
   { value: 'studio', label: 'Studio (prévia)' },
+  { value: 'tokens', label: 'Tokens (campanha)' },
 ];
 
 const permissionLabel = (value) => PERMISSIONS.find((p) => p.value === value)?.label || value;

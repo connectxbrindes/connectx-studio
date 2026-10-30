@@ -13,6 +13,8 @@ import AdminResellers from './pages/admin/AdminResellers';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminStudio from './pages/admin/AdminStudio';
+import AdminTokens from './pages/admin/AdminTokens';
+import Store from './pages/Store';
 import ProductsLayout from './pages/admin/products/ProductsLayout';
 import AdminProductsList from './pages/admin/products/AdminProductsList';
 import AdminCategories from './pages/admin/products/AdminCategories';
@@ -30,6 +32,8 @@ function App() {
           </StorefrontGuard>
         }
       />
+      {/* Loja virtual de varejo: Studio aberto, sem login (cadastro só no checkout). */}
+      <Route path="/store" element={<Store />} />
       <Route path="/apresentacao" element={<Apresentacao />} />
       <Route path="/login" element={<StaffLogin />} />
       <Route
@@ -84,6 +88,14 @@ function App() {
           element={
             <RequirePermission section="orders">
               <AdminOrders />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="tokens"
+          element={
+            <RequirePermission section="tokens">
+              <AdminTokens />
             </RequirePermission>
           }
         />
