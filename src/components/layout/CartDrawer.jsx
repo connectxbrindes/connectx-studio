@@ -16,6 +16,8 @@ export default function CartDrawer() {
   const subtotal = useStore((s) => s.cartSubtotal());
   const identity = useStore((s) => s.identity);
   const hidePrices = identity?.hidePrices;
+  // Vendedor só é pedido (e obrigatório) no perfil de revendedor.
+  const requireSeller = identity?.role === 'reseller';
   const resetConfigurator = useStore((s) => s.resetConfigurator);
   const resetWizard = useStore((s) => s.resetWizard);
 
@@ -31,7 +33,7 @@ export default function CartDrawer() {
       setError('Informe o nome do cliente para finalizar o pedido.');
       return;
     }
-    if (!sellerName.trim()) {
+    if (requireSeller && !sellerName.trim()) {
       setError('Informe o nome do vendedor para finalizar o pedido.');
       return;
     }
@@ -41,7 +43,7 @@ export default function CartDrawer() {
       name: customerName.trim(),
       contact: customerContact.trim(),
       note: customerNote.trim(),
-      seller: sellerName.trim(),
+      seller: requireSeller ? sellerName.trim() : '',
       resellerId: identity?.resellerId || null,
     });
     setIsSubmitting(false);
@@ -182,6 +184,7 @@ export default function CartDrawer() {
                   className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-text-primary"
                 />
               </label>
+              {requireSeller && (
               <label className="flex flex-col gap-1 text-sm">
                 <span>
                   Vendedor <span className="text-accent">*</span>
@@ -194,6 +197,7 @@ export default function CartDrawer() {
                   className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-text-primary placeholder:text-text-secondary"
                 />
               </label>
+              )}
               <label className="flex flex-col gap-1 text-sm">
                 Observação
                 <textarea
