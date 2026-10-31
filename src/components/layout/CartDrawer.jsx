@@ -22,6 +22,7 @@ export default function CartDrawer() {
   const [customerName, setCustomerName] = useState('');
   const [customerContact, setCustomerContact] = useState('');
   const [customerNote, setCustomerNote] = useState('');
+  const [sellerName, setSellerName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,12 +31,17 @@ export default function CartDrawer() {
       setError('Informe o nome do cliente para finalizar o pedido.');
       return;
     }
+    if (!sellerName.trim()) {
+      setError('Informe o nome do vendedor para finalizar o pedido.');
+      return;
+    }
     setError('');
     setIsSubmitting(true);
     const { error: submitError } = await submitOrders(items, {
       name: customerName.trim(),
       contact: customerContact.trim(),
       note: customerNote.trim(),
+      seller: sellerName.trim(),
       resellerId: identity?.resellerId || null,
     });
     setIsSubmitting(false);
@@ -49,6 +55,7 @@ export default function CartDrawer() {
     setCustomerName('');
     setCustomerContact('');
     setCustomerNote('');
+    setSellerName('');
     closeDrawer();
     // Volta pra tela de escolher produto (Passo 1), pronta pra um pedido
     // novo — sem isso, o cliente ficava preso no produto/personalização do
@@ -173,6 +180,18 @@ export default function CartDrawer() {
                   value={customerContact}
                   onChange={(e) => setCustomerContact(e.target.value)}
                   className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-text-primary"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>
+                  Vendedor <span className="text-accent">*</span>
+                </span>
+                <input
+                  value={sellerName}
+                  onChange={(e) => setSellerName(e.target.value)}
+                  required
+                  placeholder="Quem atendeu este pedido?"
+                  className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-text-primary placeholder:text-text-secondary"
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">

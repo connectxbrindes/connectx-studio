@@ -123,6 +123,7 @@ export default function AdminOrders() {
       Qtd: o.quantity,
       Status: STATUS_LABELS[o.status] || o.status,
       Cliente: o.customer_name || '',
+      Vendedor: o.seller_name || '',
       Unidade: o.reseller?.short_name || o.reseller?.contact_name || o.reseller_name || '',
       Observação: o.customer_note || '',
       'Motivo Cancelamento': o.cancel_reason || '',
@@ -236,6 +237,7 @@ export default function AdminOrders() {
       ),
     },
     { key: 'customer_name', label: 'Cliente', render: (o) => o.customer_name },
+    { key: 'seller_name', label: 'Vendedor', render: (o) => o.seller_name || <span className="text-text-secondary">—</span> },
     {
       key: 'reseller',
       label: 'Unidade',
@@ -519,6 +521,7 @@ export default function AdminOrders() {
                       <th className="px-3 py-2 font-semibold text-center">Qtd</th>
                       <th className="px-3 py-2 font-semibold">Status</th>
                       <th className="px-3 py-2 font-semibold">Cliente</th>
+                      <th className="px-3 py-2 font-semibold">Vendedor</th>
                       <th className="px-3 py-2 font-semibold">Revendedor</th>
                       <th className="px-3 py-2 font-semibold">Observação</th>
                       <th className="px-3 py-2 font-semibold">Motivo Cancel.</th>
@@ -538,6 +541,7 @@ export default function AdminOrders() {
                         <td className="px-3 py-2 text-center">{o.quantity}</td>
                         <td className="px-3 py-2 text-text-secondary">{STATUS_LABELS[o.status] || o.status}</td>
                         <td className="px-3 py-2 text-text-secondary">{o.customer_name || '—'}</td>
+                        <td className="px-3 py-2 text-text-secondary">{o.seller_name || '—'}</td>
                         <td className="px-3 py-2 text-text-secondary">{o.reseller_name || '—'}</td>
                         <td className="max-w-[220px] px-3 py-2 text-text-secondary">{o.customer_note || '—'}</td>
                         <td className="max-w-[220px] px-3 py-2 text-text-secondary">{o.cancel_reason || '—'}</td>

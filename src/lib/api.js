@@ -710,7 +710,7 @@ export async function fetchOrders() {
   const { data, error } = await supabaseAdmin
     .from('orders')
     .select(`
-      id, order_number, sequence_number, customer_name, customer_contact, customer_note, quantity,
+      id, order_number, sequence_number, customer_name, customer_contact, customer_note, seller_name, quantity,
       personalization_fee, unit_price, line_total, status, cancel_reason, created_at, status_changed_at,
       preview_image_url, original_files_zip_url, art_image_url,
       reseller_id, reseller_name,
@@ -737,7 +737,7 @@ export async function fetchMyOrders() {
   const { data, error } = await supabase
     .from('orders')
     .select(`
-      id, order_number, sequence_number, customer_name, customer_contact, customer_note, quantity,
+      id, order_number, sequence_number, customer_name, customer_contact, customer_note, seller_name, quantity,
       line_total, status, cancel_reason, created_at, preview_image_url,
       product:products ( name ),
       color:product_colors ( name ),
@@ -769,7 +769,7 @@ export async function fetchProductionReport(fromISO, toISO, status = 'completed'
     .from('orders')
     .select(`
       sequence_number, order_number, created_at, status_changed_at, quantity, line_total, status, cancel_reason,
-      customer_name, customer_note, reseller_name,
+      customer_name, customer_note, seller_name, reseller_name,
       product:products ( name, category:categories ( id, name ), subcategory:subcategories ( category:categories ( id, name ) ) ),
       color:product_colors ( name ), size:product_sizes ( name ), model:brand_models ( name )
     `)
@@ -879,6 +879,7 @@ export async function submitOrders(cartItems, customer) {
         customer_name: customer.name,
         customer_contact: customer.contact || null,
         customer_note: customer.note || null,
+        seller_name: customer.seller || null,
         reseller_id: customer.resellerId || null,
         product_id: item.productId,
         color_id: item.colorId || null,

@@ -589,3 +589,10 @@ create index if not exists resellers_tiny_id_idx on resellers (tiny_id);
 alter table resellers add column if not exists tiny_tipo text;
 create index if not exists resellers_tiny_tipo_idx on resellers (tiny_tipo);
 
+
+-- ---------------------------------------------------------------------------
+-- Vendedor obrigatório no carrinho: nome de quem atendeu o pedido.
+-- place_order (versão em produção) passou a gravar seller_name a partir de
+-- row_data->>'seller_name' (nullif(trim(...),'')).
+-- ---------------------------------------------------------------------------
+alter table orders add column if not exists seller_name text;

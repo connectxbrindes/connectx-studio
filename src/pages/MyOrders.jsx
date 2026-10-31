@@ -302,6 +302,9 @@ export default function MyOrders() {
                             </span>
                           </div>
                           <p className="font-medium text-text-primary">{o.customer_name}</p>
+                          {o.seller_name && (
+                            <p className="text-xs text-text-secondary">Vendedor: {o.seller_name}</p>
+                          )}
                           <p className="truncate text-xs text-text-secondary">{productLine(o)}</p>
                           {o.customer_note && (
                             <p className="mt-1 rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-800">
