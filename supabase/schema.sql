@@ -596,3 +596,9 @@ create index if not exists resellers_tiny_tipo_idx on resellers (tiny_tipo);
 -- row_data->>'seller_name' (nullif(trim(...),'')).
 -- ---------------------------------------------------------------------------
 alter table orders add column if not exists seller_name text;
+
+-- ---------------------------------------------------------------------------
+-- Integração com a Corrida (campanha de vendedores): gatilho
+-- trg_order_corrida_brindes / função notify_corrida_brindes (aplicados via
+-- migration orders_notify_corrida_brindes). Ver docs/integracao-corrida.md.
+-- ---------------------------------------------------------------------------
