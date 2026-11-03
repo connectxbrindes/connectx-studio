@@ -602,3 +602,5 @@ alter table orders add column if not exists seller_name text;
 -- trg_order_corrida_brindes / função notify_corrida_brindes (aplicados via
 -- migration orders_notify_corrida_brindes). Ver docs/integracao-corrida.md.
 -- ---------------------------------------------------------------------------
+-- Só unidades da tabela corrida_resellers entram na Corrida
+-- (migration corrida_only_participating_resellers).
