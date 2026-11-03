@@ -604,3 +604,5 @@ alter table orders add column if not exists seller_name text;
 -- ---------------------------------------------------------------------------
 -- Só unidades da tabela corrida_resellers entram na Corrida
 -- (migration corrida_only_participating_resellers).
+-- Nome do vendedor padronizado no envio (corrida_normalize_name; migration
+-- corrida_normalize_seller_name): "SAMUEL"/"samuel" -> "Samuel".

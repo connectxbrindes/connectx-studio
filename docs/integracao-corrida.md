@@ -57,7 +57,7 @@ Mudanças de status comuns (em produção, concluído…) não geram envio.
   "schema": "public",
   "record": {
     "id": "uuid", "order_number": "PED-…", "sequence_number": 108,
-    "vendedor": "João", "seller_name": "João",
+    "vendedor": "Joao", "seller_name": "Joao", "vendedor_digitado": "JOÃO",
     "unidade": "Nome da unidade", "reseller_id": "uuid", "reseller_name": "Nome da unidade",
     "data": "2026-11-01", "created_at": "2026-11-01T13:00:00+00:00",
     "quantidade": 1, "quantity": 1, "status": "pending"
@@ -65,6 +65,11 @@ Mudanças de status comuns (em produção, concluído…) não geram envio.
   "old_record": null
 }
 ```
+
+**Nome do vendedor padronizado:** `vendedor` e `seller_name` já chegam sem espaços sobrando,
+sem acento e com a primeira letra maiúscula. "Samuel", "SAMUEL", "samuel" e " samuel " chegam todos
+como `Samuel`, então a Corrida pode somar pontos direto por esse campo. O texto original vai em
+`vendedor_digitado`, só para conferência.
 
 Em `DELETE`, `record` é `null` e os dados vêm em `old_record`. `data` é o dia do
 pedido no horário de Brasília. Cada linha é um item do pedido; `quantidade` é o número de peças.
