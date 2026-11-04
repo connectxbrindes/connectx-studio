@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { formatCurrency } from '../../utils/price';
 import ProductCard from '../../components/store/ProductCard';
+import BannerSlide, { bannerToSlide } from '../../components/store/BannerSlide';
+import { fetchPublicBanners } from '../../lib/storeApi';
 import { groupByCategory, productImage } from './useStoreSession';
 
 function Spinner() {
@@ -13,18 +15,23 @@ function Spinner() {
   );
 }
 
-/** Banner rotativo do topo, montado a partir do catálogo. */
+/** Banner rotativo do topo. */
 function HeroCarousel({ slides }) {
   const [index, setIndex] = useState(0);
   const count = slides.length;
 
   useEffect(() => {
+    setIndex(0);
+  }, [count]);
+
+  useEffect(() => {
     if (count < 2) return undefined;
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     if (reduce) return undefined;
-    const t = setInterval(() => setIndex((i) => (i + 1) % count), 6000);
-    return () => clearInterval(t);
-  }, [count]);
+    // Recomeça a contagem a cada troca (inclusive manual), pra não pular logo depois de um clique.
+    const t = setTimeout(() => setIndex((i) => (i + 1) % count), 6000);
+    return () => clearTimeout(t);
+  }, [count, index]);
 
   if (count === 0) return null;
   const go = (delta) => setIndex((i) => (i + delta + count) % count);
@@ -34,26 +41,8 @@ function HeroCarousel({ slides }) {
       <div className="relative overflow-hidden rounded-3xl">
         <div className="flex transition-transform duration-700 ease-out motion-reduce:transition-none" style={{ transform: `translateX(-${index * 100}%)` }}>
           {slides.map((s, i) => (
-            <div
-              key={s.key}
-              className={`flex min-w-full flex-col-reverse items-center gap-4 px-6 py-8 sm:flex-row sm:px-14 sm:py-10 ${s.bg}`}
-              aria-hidden={i !== index}
-            >
-              <div className="flex-1 text-center sm:text-left">
-                <p className={`mb-2 text-xs font-bold uppercase tracking-[0.2em] ${s.eyebrowClass}`}>{s.eyebrow}</p>
-                <h2 className={`text-3xl font-extrabold leading-tight sm:text-5xl ${s.titleClass}`}>{s.title}</h2>
-                <p className={`mt-3 max-w-md text-sm sm:text-base ${s.textClass} mx-auto sm:mx-0`}>{s.text}</p>
-                <Link
-                  to={s.href}
-                  tabIndex={i === index ? 0 : -1}
-                  className="mt-6 inline-flex rounded-full bg-accent px-7 py-3 text-sm font-bold text-white shadow-lg shadow-accent/30 transition-transform hover:scale-[1.03]"
-                >
-                  {s.cta}
-                </Link>
-              </div>
-              <div className="flex h-44 w-44 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-2xl sm:h-72 sm:w-72">
-                {s.image && <img src={s.image} alt="" className="h-[78%] w-[78%] object-contain mix-blend-multiply" />}
-              </div>
+            <div key={s.key} className="min-w-full" aria-hidden={i !== index}>
+              <BannerSlide slide={s} active={i === index} />
             </div>
           ))}
         </div>
@@ -69,7 +58,7 @@ function HeroCarousel({ slides }) {
                   type="button"
                   onClick={() => setIndex(i)}
                   aria-label={`Ir para o destaque ${i + 1}`}
-                  className={`h-2 rounded-full transition-all ${i === index ? 'w-6 bg-accent' : 'w-2 bg-white/70'}`}
+                  className={`h-2 rounded-full shadow transition-all ${i === index ? 'w-6 bg-accent' : 'w-2 bg-white/80'}`}
                 />
               ))}
             </div>
@@ -94,21 +83,28 @@ export default function StoreHome() {
   const categories = useMemo(() => groupByCategory(catalog), [catalog]);
   const [tab, setTab] = useState('all');
 
-  const gifts = catalog.filter((p) => campaignProductIds.includes(p.id));
-  const featured = [...catalog].sort((a, b) => b.price - a.price)[0];
+  const [banners, setBanners] = useState(null); // null = carregando
+  const gifts = useMemo(() => catalog.filter((p) => campaignProductIds.includes(p.id)), [catalog, campaignProductIds]);
 
+  useEffect(() => {
+    fetchPublicBanners().then(setBanners);
+  }, []);
+
+  // Banners cadastrados no Painel; sem nenhum ativo, monta destaques
+  // automáticos a partir do catálogo.
   const slides = useMemo(() => {
+    if (banners === null) return [];
+    if (banners.length > 0) return banners.map(bannerToSlide);
     const list = [];
+    const featured = [...catalog].sort((a, b) => b.price - a.price)[0];
     if (gifts[0]) {
       list.push({
         key: 'campanha',
-        bg: 'bg-gradient-to-br from-brand-dark via-[#14506f] to-brand',
+        layout: 'product',
+        theme: 'dark',
         eyebrow: 'Campanha nas lojas',
-        eyebrowClass: 'text-accent',
         title: 'Ganhou um cartão? Seu brinde é personalizado!',
-        titleClass: 'text-white',
         text: `Digite o código do cartão no carrinho e leve o ${gifts[0].name.trim()} com a sua arte, de graça.`,
-        textClass: 'text-white/80',
         cta: 'Resgatar meu brinde',
         href: `/store/p/${gifts[0].slug}`,
         image: productImage(gifts[0]),
@@ -117,13 +113,11 @@ export default function StoreHome() {
     if (featured) {
       list.push({
         key: 'destaque',
-        bg: 'bg-gradient-to-br from-[#fff1ec] to-[#ffd9cc]',
+        layout: 'product',
+        theme: 'coral',
         eyebrow: 'Feito pra você',
-        eyebrowClass: 'text-accent',
         title: `${featured.name.trim()} com a sua cara`,
-        titleClass: 'text-brand-dark',
         text: `Crie em minutos no nosso Studio. A partir de ${formatCurrency(featured.price)}.`,
-        textClass: 'text-brand-dark/70',
         cta: 'Personalizar agora',
         href: `/store/p/${featured.slug}`,
         image: productImage(featured),
@@ -133,20 +127,18 @@ export default function StoreHome() {
     if (other) {
       list.push({
         key: 'retirada',
-        bg: 'bg-gradient-to-br from-[#e8f5fb] to-[#cbe9f6]',
+        layout: 'product',
+        theme: 'blue',
         eyebrow: 'Sem custo de entrega',
-        eyebrowClass: 'text-brand',
         title: 'Personalize online, retire grátis na loja',
-        titleClass: 'text-brand-dark',
         text: 'Ou receba em casa pelos Correios, com o frete calculado pelo seu CEP.',
-        textClass: 'text-brand-dark/70',
         cta: 'Ver produtos',
         href: '#produtos',
         image: productImage(other),
       });
     }
     return list;
-  }, [catalog, gifts, featured]);
+  }, [banners, catalog, gifts]);
 
   if (!catalogLoaded) return <Spinner />;
 

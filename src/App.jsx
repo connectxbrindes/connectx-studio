@@ -14,6 +14,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminStudio from './pages/admin/AdminStudio';
 import AdminTokens from './pages/admin/AdminTokens';
+import AdminBanners from './pages/admin/AdminBanners';
 import Store from './pages/Store';
 import StoreLayout from './pages/store/StoreLayout';
 import StoreHome from './pages/store/StoreHome';
@@ -99,6 +100,14 @@ function App() {
           element={
             <RequirePermission section="orders">
               <AdminOrders />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="banners"
+          element={
+            <RequirePermission section="tokens">
+              <AdminBanners />
             </RequirePermission>
           }
         />

@@ -306,7 +306,7 @@ export async function fetchAdminProducts() {
       id, name, slug, base_price, reseller_price, min_order_qty, description, cover_image_url, personalization_area, status,
       ship_weight_kg, ship_height_cm, ship_width_cm, ship_length_cm,
       category_id, subcategory_id, brand_id, has_3d_viewer, model_3d_url, uses_device_models,
-      category:categories ( id, name ),
+      category:categories ( id, name, slug ),
       subcategory:subcategories ( id, name, category:categories ( id, name ) ),
       brand:brands ( id, name ),
       colors:product_colors ( id, name, hex, image_url, sort_order, stock_quantity, bling_sku ),

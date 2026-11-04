@@ -18,6 +18,7 @@ export default function AdminDashboard() {
     { to: '/admin/revendedores', label: 'Revendedores', show: hasPermission('resellers') },
     { to: '/admin/studio', label: 'Studio', show: hasPermission('studio') },
     { to: '/admin/tokens', label: 'Loja virtual / Tokens', show: hasPermission('tokens') },
+    { to: '/admin/banners', label: 'Banners da loja', show: hasPermission('tokens') },
     // Gestão de usuários é exclusiva do master.
     { to: '/admin/usuarios', label: 'Usuários', show: role === 'master' },
   ].filter((item) => item.show);

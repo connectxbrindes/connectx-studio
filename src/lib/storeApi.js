@@ -245,3 +245,65 @@ export async function saveStoreSettings(payload) {
     .eq('id', 1);
   return { error };
 }
+
+// ---------------------------------------------------------------------------
+// Banners da vitrine
+// ---------------------------------------------------------------------------
+
+/** Banners ativos e dentro do período (a regra de período fica no banco). */
+export async function fetchPublicBanners() {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabaseStore
+    .from('store_banners')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) return [];
+  return data || [];
+}
+
+export async function fetchAdminBanners() {
+  const { data, error } = await supabaseAdmin
+    .from('store_banners')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('Error fetching banners:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function saveBanner(id, payload) {
+  const body = { ...payload, updated_at: new Date().toISOString() };
+  const { error } = id
+    ? await supabaseAdmin.from('store_banners').update(body).eq('id', id)
+    : await supabaseAdmin.from('store_banners').insert(body);
+  return { error };
+}
+
+export async function deleteBanner(id) {
+  const { error } = await supabaseAdmin.from('store_banners').delete().eq('id', id);
+  return { error };
+}
+
+/** Grava a ordem (sort_order = posição na lista). */
+export async function reorderBanners(ids) {
+  const results = await Promise.all(
+    ids.map((id, index) => supabaseAdmin.from('store_banners').update({ sort_order: index }).eq('id', id))
+  );
+  return { error: results.find((r) => r.error)?.error || null };
+}
+
+export async function uploadBannerImage(file) {
+  const extension = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `banners/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabaseAdmin.storage.from('product-images').upload(path, file);
+  if (error) {
+    console.error('Error uploading banner:', error);
+    return { url: null, error };
+  }
+  const { data } = supabaseAdmin.storage.from('product-images').getPublicUrl(path);
+  return { url: data.publicUrl, error: null };
+}
