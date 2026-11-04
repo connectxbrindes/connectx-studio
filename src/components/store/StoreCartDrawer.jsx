@@ -288,8 +288,18 @@ export default function StoreCartDrawer() {
                       alt={item.productName}
                       className="h-20 w-20 flex-shrink-0 rounded-lg bg-bg object-contain"
                     />
-                    <div className="flex flex-1 flex-col gap-1">
-                      <p className="font-semibold">{item.productName}</p>
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="font-semibold">{item.productName}</p>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.id)}
+                          aria-label={`Remover ${item.productName} do carrinho`}
+                          className="-mr-1 flex h-6 w-6 flex-shrink-0 items-center justify-center text-text-secondary hover:text-accent"
+                        >
+                          ✕
+                        </button>
+                      </div>
                       <p className="text-sm text-text-secondary">
                         {[item.color, item.size, item.model].filter(Boolean).join(' · ')}
                       </p>
@@ -306,14 +316,6 @@ export default function StoreCartDrawer() {
                         <p className="font-semibold">{formatCurrency(item.lineTotal)}</p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.id)}
-                      aria-label={`Remover ${item.productName} do carrinho`}
-                      className="self-start text-text-secondary hover:text-accent"
-                    >
-                      ✕
-                    </button>
                   </li>
                 );
               })}
@@ -341,7 +343,7 @@ export default function StoreCartDrawer() {
                       placeholder="Digite o código do cartão"
                       className={`${inputClass} flex-1 font-mono uppercase`}
                     />
-                    <Button type="submit" variant="secondary" className="px-4 py-2 text-sm" disabled={checkingToken || !tokenInput.trim()}>
+                    <Button type="submit" variant="secondary" className="w-36 flex-shrink-0 whitespace-nowrap px-3 py-2 text-sm" disabled={checkingToken || !tokenInput.trim()}>
                       {checkingToken ? '…' : 'Aplicar'}
                     </Button>
                   </form>
@@ -372,7 +374,7 @@ export default function StoreCartDrawer() {
                 </label>
 
                 {delivery === 'shipping' && (
-                  <div className="flex flex-col gap-3 rounded-lg bg-bg p-3">
+                  <div className="flex flex-col gap-3 pt-1">
                     <form onSubmit={handleQuote} className="flex gap-2">
                       <input
                         inputMode="numeric"
@@ -380,15 +382,15 @@ export default function StoreCartDrawer() {
                         value={address.cep}
                         onChange={(e) => setAddress({ ...address, cep: formatCep(e.target.value) })}
                         placeholder="Seu CEP"
-                        className={`${inputClass} flex-1 bg-panel`}
+                        className={`${inputClass} min-w-0 flex-1`}
                       />
-                      <Button type="submit" variant="secondary" className="px-4 py-2 text-sm" disabled={quoting}>
+                      <Button type="submit" variant="secondary" className="w-36 flex-shrink-0 whitespace-nowrap px-3 py-2 text-sm" disabled={quoting}>
                         {quoting ? 'Calculando…' : 'Calcular frete'}
                       </Button>
                     </form>
                     {quoteError && <p className="text-xs text-accent">{quoteError}</p>}
                     {quote?.options?.map((o) => (
-                      <label key={o.id} className={`flex cursor-pointer items-center gap-2 rounded-lg border bg-panel px-3 py-2 ${serviceId === o.id ? 'border-text-primary' : 'border-border'}`}>
+                      <label key={o.id} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 ${serviceId === o.id ? 'border-text-primary' : 'border-border'}`}>
                         <input type="radio" name="service" checked={serviceId === o.id} onChange={() => setServiceId(o.id)} />
                         <span className="flex-1">
                           {o.company} {o.name}
@@ -399,12 +401,12 @@ export default function StoreCartDrawer() {
                     ))}
                     {quote && (
                       <div className="grid grid-cols-6 gap-2">
-                        <input value={address.street} onChange={updateAddress('street')} placeholder="Rua / Avenida" autoComplete="address-line1" className={`${inputClass} col-span-4 bg-panel`} />
-                        <input value={address.number} onChange={updateAddress('number')} placeholder="Nº" className={`${inputClass} col-span-2 bg-panel`} />
-                        <input value={address.complement} onChange={updateAddress('complement')} placeholder="Complemento (opcional)" autoComplete="address-line2" className={`${inputClass} col-span-6 bg-panel`} />
-                        <input value={address.district} onChange={updateAddress('district')} placeholder="Bairro" className={`${inputClass} col-span-6 bg-panel`} />
-                        <input value={address.city} onChange={updateAddress('city')} placeholder="Cidade" autoComplete="address-level2" className={`${inputClass} col-span-4 bg-panel`} />
-                        <input value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value.toUpperCase().slice(0, 2) })} placeholder="UF" autoComplete="address-level1" className={`${inputClass} col-span-2 bg-panel`} />
+                        <input value={address.street} onChange={updateAddress('street')} placeholder="Rua / Avenida" autoComplete="address-line1" className={`${inputClass} col-span-4`} />
+                        <input value={address.number} onChange={updateAddress('number')} placeholder="Nº" className={`${inputClass} col-span-2`} />
+                        <input value={address.complement} onChange={updateAddress('complement')} placeholder="Complemento (opcional)" autoComplete="address-line2" className={`${inputClass} col-span-6`} />
+                        <input value={address.district} onChange={updateAddress('district')} placeholder="Bairro" className={`${inputClass} col-span-6`} />
+                        <input value={address.city} onChange={updateAddress('city')} placeholder="Cidade" autoComplete="address-level2" className={`${inputClass} col-span-4`} />
+                        <input value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value.toUpperCase().slice(0, 2) })} placeholder="UF" autoComplete="address-level1" className={`${inputClass} col-span-2`} />
                       </div>
                     )}
                   </div>
