@@ -11,6 +11,7 @@ import {
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import StoreSettingsCard from './StoreSettingsCard';
+import ShippingRatesCard from './ShippingRatesCard';
 
 const STATUS_LABELS = { active: 'Disponível', used: 'Usado', inactive: 'Desativado' };
 const STATUS_STYLES = {
@@ -146,6 +147,7 @@ export default function AdminTokens() {
       </div>
 
       <StoreSettingsCard />
+      <ShippingRatesCard />
 
       <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-panel p-4">
         <label className="flex flex-1 flex-col gap-1 text-sm">

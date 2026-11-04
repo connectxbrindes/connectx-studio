@@ -16,14 +16,11 @@ const COMPANY_FIELDS = [
 ];
 
 const NUMBER_FIELDS = [
-  ['default_weight_kg', 'Peso (kg)', '0.01'],
-  ['default_height_cm', 'Altura (cm)', '0.1'],
-  ['default_width_cm', 'Largura (cm)', '0.1'],
-  ['default_length_cm', 'Comprimento (cm)', '0.1'],
+  ['default_weight_kg', 'Peso padrão do produto embalado (kg)', '0.01'],
 ];
 
-/** Configuração da loja virtual: CEP de origem do frete, endereço de
- * retirada e embalagem padrão (usada quando o produto não tem medidas). */
+/** Configuração da loja virtual: endereço de retirada, entrega pelos Correios
+ * (preços na Tabela de frete) e peso padrão (quando o produto não tem o dele). */
 export default function StoreSettingsCard() {
   const [form, setForm] = useState(null);
   const [integrations, setIntegrations] = useState(null);
@@ -41,14 +38,8 @@ export default function StoreSettingsCard() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const cep = (form.origin_cep || '').replace(/\D/g, '');
-    if (cep && cep.length !== 8) {
-      setMessage('CEP de origem precisa ter 8 números.');
-      return;
-    }
     setSaving(true);
     const { error } = await saveStoreSettings({
-      origin_cep: cep || null,
       pickup_address: form.pickup_address?.trim() || null,
       shipping_enabled: Boolean(form.shipping_enabled),
       ...Object.fromEntries(COMPANY_FIELDS.map(([key]) => [key, form[key]?.trim() || null])),
@@ -60,9 +51,9 @@ export default function StoreSettingsCard() {
     setMessage(error ? 'Não foi possível salvar.' : 'Salvo!');
   };
 
-  const status = (on) => (
+  const status = (on, onLabel = 'Conectado', offLabel = 'Falta configurar') => (
     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${on ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-      {on ? 'Conectado' : 'Falta configurar'}
+      {on ? onLabel : offLabel}
     </span>
   );
 
@@ -72,25 +63,21 @@ export default function StoreSettingsCard() {
         <h3 className="text-lg font-bold">Configurações da loja</h3>
         {integrations && (
           <div className="flex flex-wrap gap-3 text-sm">
-            <span className="flex items-center gap-2">Frete (Melhor Envio) {status(integrations.shipping)}</span>
+            <span className="flex items-center gap-2">Frete (Correios) {status(integrations.shipping, 'Tabela preenchida', 'Falta a tabela')}</span>
             <span className="flex items-center gap-2">Pagamento (Mercado Pago) {status(integrations.payment)}</span>
           </div>
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4">
         <label className="flex flex-col gap-1 text-sm">
-          CEP de origem (de onde sai o envio)
-          <input value={form.origin_cep || ''} onChange={(e) => setForm({ ...form, origin_cep: e.target.value })} placeholder="00000-000" className={inputClass} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
           Endereço para retirada (aparece pro cliente)
           <input value={form.pickup_address || ''} onChange={(e) => setForm({ ...form, pickup_address: e.target.value })} placeholder="Rua, número – bairro – cidade · horário" className={inputClass} />
         </label>
       </div>
 
       <div>
-        <p className="mb-2 text-sm">Embalagem padrão (quando o produto não tem medidas próprias)</p>
+        <p className="mb-2 text-sm">Peso para o frete (quando o produto não tem o peso cadastrado)</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {NUMBER_FIELDS.map(([key, label, step]) => (
             <label key={key} className="flex flex-col gap-1 text-xs text-text-secondary">
@@ -103,7 +90,7 @@ export default function StoreSettingsCard() {
 
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={Boolean(form.shipping_enabled)} onChange={(e) => setForm({ ...form, shipping_enabled: e.target.checked })} />
-        Oferecer entrega pelos Correios na loja (precisa do CEP de origem e do Melhor Envio conectado)
+        Oferecer entrega pelos Correios na loja (usa os preços da Tabela de frete abaixo)
       </label>
 
       <div className="border-t border-border pt-4">

@@ -2,13 +2,13 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 // Loja virtual (/store) — duas ações:
-//  - action "quote": cota o frete (Correios PAC/SEDEX via Melhor Envio) pro CEP.
+//  - action "quote": cota o frete Correios (PAC/SEDEX) pro CEP, pela tabela de
+//    preços por estado cadastrada no Painel (public.shipping_rates).
 //  - action "checkout": grava o pedido (RPC place_store_order, com a sessão do
 //    cliente), RECALCULA o frete aqui no servidor e cria a preferência do
 //    Mercado Pago (Checkout Pro). Devolve o link de pagamento.
-// Segredos: MELHOR_ENVIO_TOKEN, MP_ACCESS_TOKEN (opcionais: MELHOR_ENVIO_SANDBOX,
-// MELHOR_ENVIO_CONTACT_EMAIL, STORE_URL). Sem eles a loja segue funcionando
-// só com retirada e pagamento combinado com a equipe.
+// Segredos: MP_ACCESS_TOKEN (opcional: STORE_URL). Sem ele a loja segue
+// funcionando com pagamento combinado com a equipe.
 // Responde sempre 200 com { ... } ou { error } (padrão das outras functions).
 
 const corsHeaders = {
@@ -22,15 +22,28 @@ const json = (body: Record<string, unknown>) =>
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ME_TOKEN = Deno.env.get("MELHOR_ENVIO_TOKEN") ?? "";
-const ME_BASE = Deno.env.get("MELHOR_ENVIO_SANDBOX") === "true"
-  ? "https://sandbox.melhorenvio.com.br"
-  : "https://melhorenvio.com.br";
-const ME_CONTACT = Deno.env.get("MELHOR_ENVIO_CONTACT_EMAIL") ?? "";
 const MP_TOKEN = Deno.env.get("MP_ACCESS_TOKEN") ?? "";
 const STORE_URL = Deno.env.get("STORE_URL") ?? "https://www.connectxbrindes.com.br/store";
-const PERSONALIZATION_FEE = 19.9; // igual a src/utils/price.js
-const CORREIOS_SERVICES = "1,2"; // 1 = PAC, 2 = SEDEX
+const SERVICES = [
+  { id: 1, name: "PAC", key: "pac" },
+  { id: 2, name: "SEDEX", key: "sedex" },
+] as const;
+
+// Faixas de CEP de cada estado (Correios).
+const CEP_RANGES: [number, number, string][] = [
+  [1000, 19999, "SP"], [20000, 28999, "RJ"], [29000, 29999, "ES"], [30000, 39999, "MG"],
+  [40000, 48999, "BA"], [49000, 49999, "SE"], [50000, 56999, "PE"], [57000, 57999, "AL"],
+  [58000, 58999, "PB"], [59000, 59999, "RN"], [60000, 63999, "CE"], [64000, 64999, "PI"],
+  [65000, 65999, "MA"], [66000, 68899, "PA"], [68900, 68999, "AP"], [69000, 69299, "AM"],
+  [69300, 69399, "RR"], [69400, 69899, "AM"], [69900, 69999, "AC"], [70000, 72799, "DF"],
+  [72800, 72999, "GO"], [73000, 73699, "DF"], [73700, 76799, "GO"], [76800, 76999, "RO"],
+  [77000, 77999, "TO"], [78000, 78899, "MT"], [79000, 79999, "MS"], [80000, 87999, "PR"],
+  [88000, 89999, "SC"], [90000, 99999, "RS"],
+];
+const ufFromCep = (cep: string) => {
+  const prefix = Number(cep.slice(0, 5));
+  return CEP_RANGES.find(([a, b]) => prefix >= a && prefix <= b)?.[2] ?? null;
+};
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 const onlyDigits = (s: unknown) => String(s ?? "").replace(/\D/g, "");
@@ -57,69 +70,44 @@ const friendly = (msg: string, fallback: string) => {
   return code ? ERROR_MESSAGES[code] : fallback;
 };
 
+const UNAVAILABLE = "Entrega pelos Correios ainda não está disponível. Escolha retirar na loja.";
+
+// Frete pela tabela de preços dos Correios (balcão) por estado de destino:
+// valor até 1 kg + valor por kg adicional (kg arredondado pra cima).
 async function quoteShipping(cep: string, lines: CartLine[]): Promise<{ options?: ShippingOption[]; error?: string }> {
-  if (!ME_TOKEN) return { error: "Entrega pelos Correios ainda não está disponível. Escolha retirar na loja." };
   const toCep = onlyDigits(cep);
   if (toCep.length !== 8) return { error: "CEP inválido." };
+  const uf = ufFromCep(toCep);
+  if (!uf) return { error: "CEP não encontrado. Confira os números." };
 
   const { data: settings } = await admin.from("store_settings").select("*").eq("id", 1).single();
-  if (!settings?.shipping_enabled || onlyDigits(settings?.origin_cep).length !== 8) {
-    return { error: "Entrega pelos Correios ainda não está disponível. Escolha retirar na loja." };
-  }
+  if (!settings?.shipping_enabled) return { error: UNAVAILABLE };
+
+  const { data: rate } = await admin.from("shipping_rates").select("*").eq("uf", uf).maybeSingle();
+  if (!rate) return { error: UNAVAILABLE };
 
   const ids = [...new Set(lines.map((l) => l.product_id))];
-  const { data: products } = await admin
-    .from("products")
-    .select("id, base_price, ship_weight_kg, ship_height_cm, ship_width_cm, ship_length_cm")
-    .in("id", ids);
+  const { data: products } = await admin.from("products").select("id, ship_weight_kg").in("id", ids);
   const byId = new Map((products ?? []).map((p) => [p.id, p]));
-
-  const meProducts = lines.map((l) => {
+  let weight = 0;
+  for (const l of lines) {
     const p = byId.get(l.product_id);
     if (!p) throw new Error("PRODUTO_INDISPONIVEL");
-    return {
-      id: l.product_id,
-      width: Number(p.ship_width_cm ?? settings.default_width_cm),
-      height: Number(p.ship_height_cm ?? settings.default_height_cm),
-      length: Number(p.ship_length_cm ?? settings.default_length_cm),
-      weight: Number(p.ship_weight_kg ?? settings.default_weight_kg),
-      insurance_value: money(Number(p.base_price) + (l.personalized ? PERSONALIZATION_FEE : 0)),
-      quantity: Math.max(1, Math.floor(Number(l.quantity) || 1)),
-    };
-  });
-
-  const res = await fetch(`${ME_BASE}/api/v2/me/shipment/calculate`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${ME_TOKEN}`,
-      "User-Agent": `ConnectX Brindes Loja${ME_CONTACT ? ` (${ME_CONTACT})` : ""}`,
-    },
-    body: JSON.stringify({
-      from: { postal_code: onlyDigits(settings.origin_cep) },
-      to: { postal_code: toCep },
-      products: meProducts,
-      options: { receipt: false, own_hand: false },
-      services: CORREIOS_SERVICES,
-    }),
-  });
-  if (!res.ok) {
-    console.error("Melhor Envio", res.status, await res.text());
-    return { error: "Não foi possível calcular o frete agora. Tente novamente ou escolha retirar na loja." };
+    weight += Number(p.ship_weight_kg ?? settings.default_weight_kg ?? 0) * Math.max(1, Math.floor(Number(l.quantity) || 1));
   }
-  const data = await res.json();
-  const options: ShippingOption[] = (Array.isArray(data) ? data : [])
-    .filter((s: any) => !s.error && (s.custom_price ?? s.price))
-    .map((s: any) => ({
-      id: Number(s.id),
-      name: String(s.name),
-      company: String(s.company?.name ?? "Correios"),
-      price: money(Number(s.custom_price ?? s.price)),
-      days: s.custom_delivery_time ?? s.delivery_time ?? null,
+  const extraKg = Math.max(0, Math.ceil(weight - 1));
+
+  const options: ShippingOption[] = SERVICES
+    .filter((s) => rate[`${s.key}_price`] != null)
+    .map((s) => ({
+      id: s.id,
+      name: s.name,
+      company: "Correios",
+      price: money(Number(rate[`${s.key}_price`]) + extraKg * Number(rate[`${s.key}_extra_kg`] ?? 0)),
+      days: rate[`${s.key}_days`] ?? null,
     }))
     .sort((a, b) => a.price - b.price);
-  if (options.length === 0) return { error: "Nenhuma opção de entrega para este CEP. Escolha retirar na loja." };
+  if (options.length === 0) return { error: "Ainda não entregamos neste CEP pelos Correios. Escolha retirar na loja." };
   return { options };
 }
 
@@ -245,7 +233,8 @@ Deno.serve(async (req: Request) => {
     }
     if (body.action === "checkout") return await handleCheckout(req, body);
     if (body.action === "config") {
-      return json({ shipping: Boolean(ME_TOKEN), payment: Boolean(MP_TOKEN) });
+      const { data: rates } = await admin.from("shipping_rates").select("uf").or("pac_price.not.is.null,sedex_price.not.is.null").limit(1);
+      return json({ shipping: (rates ?? []).length > 0, payment: Boolean(MP_TOKEN) });
     }
     return json({ error: "Ação inválida." });
   } catch (err) {

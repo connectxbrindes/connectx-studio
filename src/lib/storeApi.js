@@ -83,17 +83,17 @@ export async function fetchCampaignProductIds() {
   return (data || []).map((row) => (typeof row === 'string' ? row : row.campaign_product_ids));
 }
 
-/** O que está ligado na loja: frete pelos Correios (Melhor Envio), pagamento
+/** O que está ligado na loja: frete pelos Correios (tabela por estado), pagamento
  * online (Mercado Pago) e o endereço de retirada. */
 export async function fetchStoreConfig() {
   const fallback = { shipping: false, payment: false, pickupAddress: '' };
   if (!isSupabaseConfigured) return fallback;
   const [{ data: fnData }, { data: settings }] = await Promise.all([
     supabaseStore.functions.invoke('store-checkout', { body: { action: 'config' } }),
-    supabaseStore.from('store_settings').select('pickup_address, shipping_enabled, origin_cep').eq('id', 1).maybeSingle(),
+    supabaseStore.from('store_settings').select('pickup_address, shipping_enabled').eq('id', 1).maybeSingle(),
   ]);
   return {
-    shipping: Boolean(fnData?.shipping && settings?.shipping_enabled && settings?.origin_cep),
+    shipping: Boolean(fnData?.shipping && settings?.shipping_enabled),
     payment: Boolean(fnData?.payment),
     pickupAddress: settings?.pickup_address || '',
   };
@@ -244,6 +244,21 @@ export async function saveStoreSettings(payload) {
     .update({ ...payload, updated_at: new Date().toISOString() })
     .eq('id', 1);
   return { error };
+}
+
+/** Tabela de frete Correios (preço de balcão por estado de destino). */
+export async function fetchShippingRates() {
+  const { data } = await supabaseAdmin.from('shipping_rates').select('*').order('uf');
+  return data || [];
+}
+
+/** Salva as linhas alteradas da tabela de frete. rows = [{ uf, ...campos }]. */
+export async function saveShippingRates(rows) {
+  const now = new Date().toISOString();
+  const results = await Promise.all(
+    rows.map(({ uf, ...fields }) => supabaseAdmin.from('shipping_rates').update({ ...fields, updated_at: now }).eq('uf', uf)),
+  );
+  return { error: results.find((r) => r.error)?.error || null };
 }
 
 // ---------------------------------------------------------------------------
