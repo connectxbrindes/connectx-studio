@@ -135,6 +135,10 @@ export default function StoreCartDrawer() {
       setQuoteError('Digite um CEP com 8 números.');
       return;
     }
+    if (!config.shipping) {
+      setQuoteError('A entrega pelos Correios estará disponível em breve. Por enquanto, retire grátis na loja.');
+      return;
+    }
     setQuoting(true);
     setQuoteError('');
     setQuote(null);
@@ -361,13 +365,11 @@ export default function StoreCartDrawer() {
                   </span>
                   <span className="font-semibold text-green-600">Grátis</span>
                 </label>
-                {config.shipping && (
-                  <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 ${delivery === 'shipping' ? 'border-text-primary' : 'border-border'}`}>
-                    <input type="radio" name="delivery" checked={delivery === 'shipping'} onChange={() => setDelivery('shipping')} />
-                    <span className="flex-1">Receber em casa (Correios)</span>
-                    {selectedService && delivery === 'shipping' && <span className="font-semibold">{formatCurrency(selectedService.price)}</span>}
-                  </label>
-                )}
+                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 ${delivery === 'shipping' ? 'border-text-primary' : 'border-border'}`}>
+                  <input type="radio" name="delivery" checked={delivery === 'shipping'} onChange={() => setDelivery('shipping')} />
+                  <span className="flex-1">Receber em casa (Correios)</span>
+                  {selectedService && delivery === 'shipping' && <span className="font-semibold">{formatCurrency(selectedService.price)}</span>}
+                </label>
 
                 {delivery === 'shipping' && (
                   <div className="flex flex-col gap-3 rounded-lg bg-bg p-3">
