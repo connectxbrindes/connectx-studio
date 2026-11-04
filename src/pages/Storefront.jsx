@@ -22,7 +22,7 @@ const STEP_COMPONENTS = {
 
 // `channel="store"` = loja virtual de varejo (/store): carrinho com token,
 // preços visíveis e cadastro do cliente no checkout.
-export default function Storefront({ channel = 'studio' }) {
+export default function Storefront({ channel = 'studio', initialProductSlug = null, initialColorId = null }) {
   const isStore = channel === 'store';
   const setChannel = useStore((s) => s.setChannel);
   const currentStep = useStore((s) => s.currentStep);
@@ -50,11 +50,22 @@ export default function Storefront({ channel = 'studio' }) {
     let mounted = true;
     async function loadData() {
       const data = await fetchCatalog();
-      if (mounted) setCatalog(data);
+      if (!mounted) return;
+      setCatalog(data);
+      // Loja virtual: veio do botão "Personalizar" da vitrine — já entra no
+      // Passo 2 (Variação) com o produto e a cor escolhidos.
+      const product = initialProductSlug && data.find((p) => p.slug === initialProductSlug);
+      if (product) {
+        const state = useStore.getState();
+        state.selectProduct(product.id);
+        const color = product.options.colors.find((c) => c.id === initialColorId);
+        if (color) state.selectColor(color);
+        useStore.setState({ currentStep: 2, furthestStep: 2 });
+      }
     }
     loadData();
     return () => { mounted = false; };
-  }, [setCatalog]);
+  }, [setCatalog, initialProductSlug, initialColorId]);
 
   useEffect(() => {
     stepRef.current?.focus();

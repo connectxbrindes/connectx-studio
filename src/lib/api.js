@@ -93,6 +93,8 @@ export async function fetchCatalog() {
     return {
       id: p.id,
       name: p.name,
+      slug: p.slug,
+      description: p.description || '',
       price: Number(p.base_price),
       minOrderQty: p.min_order_qty && p.min_order_qty > 0 ? p.min_order_qty : 1,
       image: p.cover_image_url,

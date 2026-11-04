@@ -31,6 +31,9 @@
   --color-accent: #f37053;
   --color-border: #e5e5e5;
   --color-panel: #ffffff;
+  /* Loja virtual (/store) — azul da marca ConnectX */
+  --color-brand: #1f8cc0;
+  --color-brand-dark: #0f3b57;
 }
 
 @layer base {

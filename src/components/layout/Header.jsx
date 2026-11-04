@@ -42,9 +42,16 @@ export default function Header({ channel = 'studio' }) {
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-panel px-6 py-5 sm:px-10">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between">
-        <Link to={isStore ? '/store' : '/'} className="text-2xl font-extrabold tracking-wide text-text-primary">
-          STUDIO<span className="text-accent">.</span>
-        </Link>
+        {isStore ? (
+          <Link to="/store" className="flex items-center gap-3" aria-label="Voltar para a loja">
+            <img src="/logo-connectx.webp" alt="ConnectX Brindes" className="h-8 w-auto sm:h-10" />
+            <span className="hidden text-sm font-semibold text-text-secondary sm:inline">‹ Voltar para a loja</span>
+          </Link>
+        ) : (
+          <Link to="/" className="text-2xl font-extrabold tracking-wide text-text-primary">
+            STUDIO<span className="text-accent">.</span>
+          </Link>
+        )}
         <div className="flex items-center gap-4">
           {isStore && !storeCustomer && (
             <button

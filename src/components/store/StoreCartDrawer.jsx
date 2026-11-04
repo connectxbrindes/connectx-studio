@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { formatCurrency } from '../../utils/price';
 import { checkCampaignToken, fetchStoreConfig, lookupCep, quoteShipping, submitStoreOrder } from '../../lib/storeApi';
@@ -8,7 +9,7 @@ import UpsellPopup from './UpsellPopup';
 
 const EXTRA_DISCOUNT = 0.1;
 const round2 = (n) => Math.round(n * 100) / 100;
-const LAST_PAYMENT_KEY = 'store-last-payment';
+import { LAST_PAYMENT_KEY } from './PaymentReturnModal';
 
 /** Mesma regra do banco (place_store_order): com token válido, 1 unidade do
  * primeiro item elegível sai grátis e os demais itens têm 10% de desconto.
@@ -38,6 +39,7 @@ const inputClass =
 const EMPTY_ADDRESS = { cep: '', street: '', number: '', complement: '', district: '', city: '', state: '' };
 
 export default function StoreCartDrawer() {
+  const navigate = useNavigate();
   const isOpen = useStore((s) => s.isDrawerOpen);
   const closeDrawer = useStore((s) => s.closeDrawer);
   const items = useStore((s) => s.items);
@@ -216,6 +218,7 @@ export default function StoreCartDrawer() {
     closeDrawer();
     resetConfigurator();
     resetWizard();
+    navigate('/store');
   };
 
   const successMessage = () => {

@@ -15,6 +15,10 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminStudio from './pages/admin/AdminStudio';
 import AdminTokens from './pages/admin/AdminTokens';
 import Store from './pages/Store';
+import StoreLayout from './pages/store/StoreLayout';
+import StoreHome from './pages/store/StoreHome';
+import StoreListing from './pages/store/StoreListing';
+import StoreProduct from './pages/store/StoreProduct';
 import ProductsLayout from './pages/admin/products/ProductsLayout';
 import AdminProductsList from './pages/admin/products/AdminProductsList';
 import AdminCategories from './pages/admin/products/AdminCategories';
@@ -32,8 +36,15 @@ function App() {
           </StorefrontGuard>
         }
       />
-      {/* Loja virtual de varejo: Studio aberto, sem login (cadastro só no checkout). */}
-      <Route path="/store" element={<Store />} />
+      {/* Loja virtual de varejo: vitrine + Studio aberto, sem login (cadastro só no checkout). */}
+      <Route path="/store" element={<StoreLayout />}>
+        <Route index element={<StoreHome />} />
+        <Route path="c/:slug" element={<StoreListing mode="category" />} />
+        <Route path="busca" element={<StoreListing mode="search" />} />
+        <Route path="campanha" element={<StoreListing mode="campaign" />} />
+        <Route path="p/:slug" element={<StoreProduct />} />
+      </Route>
+      <Route path="/store/personalizar" element={<Store />} />
       <Route path="/apresentacao" element={<Apresentacao />} />
       <Route path="/login" element={<StaffLogin />} />
       <Route

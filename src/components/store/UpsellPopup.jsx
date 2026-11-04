@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 
 /** Pop-up de 10%: aparece quando o cliente coloca o brinde da campanha no
  * carrinho e abre o carrinho só com ele. Incentiva adicionar outro produto. */
 export default function UpsellPopup({ isOpen, giftName }) {
+  const navigate = useNavigate();
   const dismissUpsell = useStore((s) => s.dismissUpsell);
   const closeDrawer = useStore((s) => s.closeDrawer);
   const resetConfigurator = useStore((s) => s.resetConfigurator);
@@ -23,7 +25,7 @@ export default function UpsellPopup({ isOpen, giftName }) {
     closeDrawer();
     resetConfigurator();
     resetWizard();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate('/store#produtos');
   };
 
   return (
