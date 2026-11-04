@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Gift } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { formatCurrency } from '../../utils/price';
 import { checkCampaignToken, fetchStoreConfig, lookupCep, quoteShipping, submitStoreOrder } from '../../lib/storeApi';
@@ -288,7 +289,7 @@ export default function StoreCartDrawer() {
                       <p className="text-sm text-text-secondary">
                         {[item.color, item.size, item.model].filter(Boolean).join(' · ')}
                       </p>
-                      {isGift && <p className="text-xs font-semibold text-green-600">🎁 Brinde — 1 unidade grátis</p>}
+                      {isGift && <p className="flex items-center gap-1 text-xs font-semibold text-green-600"><Gift className="h-3.5 w-3.5" aria-hidden="true" /> Brinde — 1 unidade grátis</p>}
                       {token && !isGift && totals.giftIndex !== -1 && (
                         <p className="text-xs font-semibold text-accent">10% de desconto aplicado</p>
                       )}

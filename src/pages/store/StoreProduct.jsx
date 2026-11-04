@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
-import { formatCurrency, PERSONALIZATION_FEE } from '../../utils/price';
+import { Eye, Gift, Palette, ShieldCheck, ShoppingBag, Store, Truck } from 'lucide-react';
+import { formatCurrency, PERSONALIZATION_FEE, storeUnitPrice } from '../../utils/price';
 import ProductCard from '../../components/store/ProductCard';
 import { productImage } from './useStoreSession';
 
@@ -64,8 +65,8 @@ export default function StoreProduct() {
 
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-14">
           <div className="flex flex-col gap-3">
-            <div className="relative flex aspect-square items-center justify-center rounded-3xl bg-bg">
-              <img src={productImage(product, color)} alt={`${product.name} ${color?.name || ''}`} className="max-h-[80%] max-w-[80%] object-contain mix-blend-multiply" />
+            <div className="relative flex aspect-square items-center justify-center rounded-3xl border border-border bg-white">
+              <img src={productImage(product, color)} alt={`${product.name} ${color?.name || ''}`} className="max-h-[78%] max-w-[78%] object-contain" />
               {isGift && (
                 <span className="absolute left-4 top-4 rounded-full bg-accent px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
                   Brinde da campanha
@@ -80,9 +81,9 @@ export default function StoreProduct() {
                     type="button"
                     onClick={() => setColorId(c.id)}
                     aria-label={`Ver ${c.name}`}
-                    className={`h-20 w-20 flex-shrink-0 rounded-xl bg-bg p-2 ring-2 ${color?.id === c.id ? 'ring-brand-dark' : 'ring-transparent'}`}
+                    className={`h-20 w-20 flex-shrink-0 rounded-xl border border-border bg-white p-2 ring-2 ${color?.id === c.id ? 'ring-brand-dark' : 'ring-transparent'}`}
                   >
-                    <img src={c.image} alt="" className="h-full w-full object-contain mix-blend-multiply" />
+                    <img src={c.image} alt="" className="h-full w-full object-contain" />
                   </button>
                 ))}
               </div>
@@ -96,13 +97,15 @@ export default function StoreProduct() {
             </div>
 
             <div>
-              <p className="text-3xl font-extrabold text-brand-dark">{formatCurrency(product.price)}</p>
-              <p className="text-sm text-text-secondary">+ {formatCurrency(PERSONALIZATION_FEE)} da personalização (foto, nome ou frase)</p>
+              <p className="text-3xl font-extrabold text-brand-dark">{formatCurrency(storeUnitPrice(product))}</p>
+              <p className="text-sm text-text-secondary">
+                Produto {formatCurrency(product.price)} + personalização {formatCurrency(PERSONALIZATION_FEE)} (foto, nome ou frase)
+              </p>
             </div>
 
             {isGift && (
               <div className="rounded-2xl border border-accent/30 bg-[#fff4f0] p-4 text-sm">
-                <p className="font-bold text-accent">🎁 Tem o cartão da campanha?</p>
+                <p className="flex items-center gap-2 font-bold text-accent"><Gift className="h-4 w-4" aria-hidden="true" /> Tem o cartão da campanha?</p>
                 <p className="mt-1 text-brand-dark/80">
                   Personalize e digite o código do cartão no carrinho: 1 unidade sai grátis e os outros produtos do pedido ganham 10% de desconto.
                 </p>
@@ -135,20 +138,47 @@ export default function StoreProduct() {
             <button
               type="button"
               onClick={personalize}
-              className="rounded-full bg-accent px-8 py-4 text-base font-bold text-white shadow-lg shadow-accent/30 transition-transform hover:scale-[1.01]"
+              className="flex items-center justify-center gap-2 rounded-full bg-accent px-8 py-4 text-base font-bold text-white shadow-lg shadow-accent/30 transition-transform hover:scale-[1.01] motion-reduce:transform-none"
             >
-              🎨 Personalizar este produto
+              <Palette className="h-5 w-5" aria-hidden="true" />
+              Personalizar este produto
             </button>
             {product.minOrderQty > 1 && (
               <p className="-mt-3 text-center text-xs text-text-secondary">Pedido mínimo: {product.minOrderQty} unidades</p>
             )}
 
-            <ul className="grid grid-cols-1 gap-2 rounded-2xl bg-bg p-4 text-sm text-brand-dark sm:grid-cols-2">
-              <li>🏬 Retirada grátis na loja</li>
-              <li>📦 Entrega pelos Correios</li>
-              <li>🖼️ Veja a prévia antes de comprar</li>
-              <li>🔒 Pix, cartão ou boleto</li>
+            <ul className="grid grid-cols-1 gap-3 rounded-2xl border border-border p-4 text-sm text-brand-dark sm:grid-cols-2">
+              {[
+                [Store, 'Retirada grátis na loja'],
+                [Truck, 'Entrega pelos Correios'],
+                [Eye, 'Veja a prévia antes de comprar'],
+                [ShieldCheck, 'Pix, cartão ou boleto'],
+              ].map(([Icon, label]) => (
+                <li key={label} className="flex items-center gap-2.5">
+                  <Icon className="h-5 w-5 flex-shrink-0 text-accent" strokeWidth={1.8} aria-hidden="true" />
+                  {label}
+                </li>
+              ))}
             </ul>
+
+            <div>
+              <h2 className="mb-3 text-sm font-bold text-brand-dark">Como funciona</h2>
+              <ol className="flex flex-col gap-3">
+                {[
+                  [Palette, 'Personalize no Studio', 'Coloque foto, nome ou frase e veja como fica.'],
+                  [ShoppingBag, 'Finalize no carrinho', 'Crie sua conta e pague com Pix, cartão ou boleto.'],
+                  [Store, 'Retire ou receba', 'Grátis na loja, ou em casa pelos Correios.'],
+                ].map(([Icon, title, body], i) => (
+                  <li key={title} className="flex gap-3">
+                    <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand-dark text-xs font-bold text-white">{i + 1}</span>
+                    <span className="text-sm">
+                      <span className="block font-semibold text-brand-dark">{title}</span>
+                      <span className="text-text-secondary">{body}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
 
             {product.description && (
               <div>
@@ -170,6 +200,16 @@ export default function StoreProduct() {
           </div>
         </section>
       )}
+      <div className="fixed inset-x-0 bottom-0 z-20 flex items-center gap-3 border-t border-border bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs text-text-secondary">{product.name.trim()}</p>
+          <p className="font-extrabold text-brand-dark">{formatCurrency(storeUnitPrice(product))}</p>
+        </div>
+        <button type="button" onClick={personalize} className="flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-white">
+          <Palette className="h-4 w-4" aria-hidden="true" />
+          Personalizar
+        </button>
+      </div>
     </>
   );
 }

@@ -200,3 +200,14 @@ end;
 $$;
 revoke execute on function place_store_order(jsonb, text, jsonb, text, jsonb) from public, anon;
 grant execute on function place_store_order(jsonb, text, jsonb, text, jsonb) to authenticated;
+
+-- Dados da empresa e políticas (rodapé e páginas de política da loja)
+alter table store_settings
+  add column if not exists company_name text,
+  add column if not exists cnpj text,
+  add column if not exists company_address text,
+  add column if not exists contact_whatsapp text,
+  add column if not exists contact_email text,
+  add column if not exists business_hours text,
+  add column if not exists exchange_policy text,
+  add column if not exists privacy_policy text;

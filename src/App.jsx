@@ -20,6 +20,7 @@ import StoreLayout from './pages/store/StoreLayout';
 import StoreHome from './pages/store/StoreHome';
 import StoreListing from './pages/store/StoreListing';
 import StoreProduct from './pages/store/StoreProduct';
+import StoreHelp from './pages/store/StoreHelp';
 import ProductsLayout from './pages/admin/products/ProductsLayout';
 import AdminProductsList from './pages/admin/products/AdminProductsList';
 import AdminCategories from './pages/admin/products/AdminCategories';
@@ -44,6 +45,7 @@ function App() {
         <Route path="busca" element={<StoreListing mode="search" />} />
         <Route path="campanha" element={<StoreListing mode="campaign" />} />
         <Route path="p/:slug" element={<StoreProduct />} />
+        <Route path="ajuda/:topic" element={<StoreHelp />} />
       </Route>
       <Route path="/store/personalizar" element={<Store />} />
       <Route path="/apresentacao" element={<Apresentacao />} />

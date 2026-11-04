@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { isSupabaseConfigured } from '../../lib/supabaseClient';
-import { storeSignOut } from '../../lib/storeApi';
+import { Clock, Gift, Mail, MapPin, MessageCircle, Search } from 'lucide-react';
+import { fetchStorePublicInfo, storeSignOut } from '../../lib/storeApi';
 import { useStoreSession, groupByCategory } from './useStoreSession';
 import StoreCartDrawer from '../../components/store/StoreCartDrawer';
 import StoreAuthModal from '../../components/store/StoreAuthModal';
@@ -10,7 +11,7 @@ import PaymentReturnModal from '../../components/store/PaymentReturnModal';
 import Toast from '../../components/ui/Toast';
 import SupabaseNotConfigured from '../admin/SupabaseNotConfigured';
 
-function SearchBox({ className = '' }) {
+function SearchBox({ className = '', autoFocus = false }) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [q, setQ] = useState(params.get('q') || '');
@@ -28,6 +29,7 @@ function SearchBox({ className = '' }) {
         onChange={(e) => setQ(e.target.value)}
         placeholder="O que você quer personalizar?"
         aria-label="Buscar produtos"
+        autoFocus={autoFocus}
         className="h-11 w-full rounded-full border border-transparent bg-bg pl-5 pr-14 text-sm outline-none transition-colors focus:border-brand focus:bg-white"
       />
       <button
@@ -120,6 +122,76 @@ function CartButton() {
   );
 }
 
+const onlyDigits = (v) => (v || '').replace(/\D/g, '');
+
+/** Rodapé: categorias, atendimento e dados da empresa (cadastrados no Painel). */
+function StoreFooter({ categories, info, withBottomBar }) {
+  const whatsapp = onlyDigits(info.contact_whatsapp);
+  const hasContact = whatsapp || info.contact_email || info.business_hours || info.company_address || info.pickup_address;
+  const legal = [info.company_name || 'ConnectX Brindes', info.cnpj && `CNPJ ${info.cnpj}`].filter(Boolean).join(' · ');
+  return (
+    <footer className={`mt-20 bg-brand-dark text-white ${withBottomBar ? 'pb-20 lg:pb-0' : ''}`}>
+      <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+        <div>
+          <img src="/logo-connectx.webp" alt="ConnectX Brindes" className="mb-4 h-10 w-auto brightness-0 invert" />
+          <p className="text-sm leading-relaxed text-white/70">Produtos personalizados com a sua cara: você cria no nosso Studio e a gente produz.</p>
+        </div>
+        <div>
+          <p className="mb-3 text-sm font-bold uppercase tracking-wider">Categorias</p>
+          <ul className="flex flex-col gap-2 text-sm text-white/70">
+            {categories.map(({ category }) => (
+              <li key={category.id}>
+                <Link to={`/store/c/${category.slug}`} className="hover:text-white">{category.name}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="mb-3 text-sm font-bold uppercase tracking-wider">Ajuda</p>
+          <ul className="flex flex-col gap-2 text-sm text-white/70">
+            <li><Link to="/store/ajuda/como-funciona" className="hover:text-white">Como funciona</Link></li>
+            {info.exchange_policy && <li><Link to="/store/ajuda/trocas" className="hover:text-white">Trocas e devoluções</Link></li>}
+            {info.privacy_policy && <li><Link to="/store/ajuda/privacidade" className="hover:text-white">Política de privacidade</Link></li>}
+          </ul>
+        </div>
+        {hasContact && (
+          <div>
+            <p className="mb-3 text-sm font-bold uppercase tracking-wider">Atendimento</p>
+            <ul className="flex flex-col gap-2.5 text-sm text-white/70">
+              {whatsapp && (
+                <li>
+                  <a href={`https://wa.me/${whatsapp.length <= 11 ? `55${whatsapp}` : whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-white">
+                    <MessageCircle className="h-4 w-4 flex-shrink-0" aria-hidden="true" /> {info.contact_whatsapp}
+                  </a>
+                </li>
+              )}
+              {info.contact_email && (
+                <li>
+                  <a href={`mailto:${info.contact_email}`} className="flex items-center gap-2 break-all hover:text-white">
+                    <Mail className="h-4 w-4 flex-shrink-0" aria-hidden="true" /> {info.contact_email}
+                  </a>
+                </li>
+              )}
+              {info.business_hours && (
+                <li className="flex items-start gap-2"><Clock className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" /> {info.business_hours}</li>
+              )}
+              {(info.company_address || info.pickup_address) && (
+                <li className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" /> {info.company_address || info.pickup_address}</li>
+              )}
+            </ul>
+          </div>
+        )}
+      </div>
+      <div className="border-t border-white/10">
+        <p className="mx-auto max-w-[1240px] px-4 py-4 text-center text-xs text-white/50 sm:px-6">
+          © {new Date().getFullYear()} {legal}
+          {info.company_address && <span className="block sm:inline"><span className="hidden sm:inline"> · </span>{info.company_address}</span>}
+        </p>
+      </div>
+    </footer>
+  );
+}
+
 /** Topo + menu de categorias + rodapé da loja virtual (vitrine). */
 export default function StoreLayout() {
   useStoreSession({ loadCatalog: true });
@@ -128,10 +200,21 @@ export default function StoreLayout() {
   const hasCampaign = catalog.some((p) => campaignProductIds.includes(p.id));
   const categories = groupByCategory(catalog);
   const location = useLocation();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [info, setInfo] = useState({});
 
   useEffect(() => {
-    document.title = 'ConnectX Brindes — Produtos personalizados do seu jeito';
+    fetchStorePublicInfo().then(setInfo);
   }, []);
+
+  useEffect(() => {
+    setSearchOpen(false);
+  }, [location.pathname, location.search]);
+
+  // Só a home usa o título padrão; produto e ajuda definem o próprio.
+  useEffect(() => {
+    if (location.pathname.replace(/\/$/, '') === '/store') document.title = 'ConnectX Brindes — Produtos personalizados do seu jeito';
+  }, [location.pathname]);
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -141,14 +224,16 @@ export default function StoreLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <div className="bg-brand-dark px-4 py-2 text-center text-xs font-medium text-white sm:text-sm">
+      <div className="truncate bg-brand-dark px-4 py-2 text-center text-xs font-medium text-white sm:text-sm">
         {hasCampaign ? (
           <>
-            🎁 Ganhou um cartão na loja? <Link to="/store/campanha" className="font-bold underline underline-offset-2">Resgate seu brinde personalizado</Link>
+            Ganhou um cartão na loja? <Link to="/store/campanha" className="font-bold underline underline-offset-2">Resgate seu brinde</Link>
             <span className="hidden sm:inline"> · Retirada grátis na loja</span>
           </>
         ) : (
-          <>🎨 Personalize do seu jeito · Retirada grátis na loja · Entrega pelos Correios</>
+          <>
+            Retirada grátis na loja<span className="hidden sm:inline"> · Entrega para todo o Brasil pelos Correios</span>
+          </>
         )}
       </div>
 
@@ -158,14 +243,23 @@ export default function StoreLayout() {
             <img src="/logo-connectx.webp" alt="ConnectX Brindes" className="h-9 w-auto sm:h-11" />
           </Link>
           <SearchBox className="hidden flex-1 md:block" />
-          <div className="ml-auto flex items-center gap-3 sm:gap-5">
+          <div className="ml-auto flex items-center gap-1 sm:gap-5">
+            <button
+              type="button"
+              onClick={() => setSearchOpen((v) => !v)}
+              aria-label="Buscar produtos"
+              aria-expanded={searchOpen}
+              className="flex h-10 w-10 items-center justify-center rounded-full text-brand-dark hover:bg-bg md:hidden"
+            >
+              <Search className="h-5 w-5" />
+            </button>
             <AccountButton />
             <CartButton />
           </div>
         </div>
-        <SearchBox className="mx-4 mb-3 md:hidden" />
+        {searchOpen && <SearchBox className="mx-4 mb-3 md:hidden" autoFocus />}
         <nav className="border-t border-border" aria-label="Categorias">
-          <ul className="mx-auto flex max-w-[1240px] gap-1 overflow-x-auto px-4 sm:justify-center sm:px-6">
+          <ul className="no-scrollbar mx-auto flex max-w-[1240px] gap-1 overflow-x-auto px-2 sm:justify-center sm:px-6">
             {categories.map(({ category }) => (
               <li key={category.id} className="flex-shrink-0">
                 <NavLink
@@ -181,9 +275,10 @@ export default function StoreLayout() {
             {hasCampaign && <li className="flex-shrink-0">
               <NavLink
                 to="/store/campanha"
-                className={({ isActive }) => `block px-3 py-3 text-sm font-semibold ${isActive ? 'text-accent' : 'text-accent hover:opacity-80'}`}
+                className={({ isActive }) => `flex items-center gap-1.5 px-3 py-3 text-sm font-semibold ${isActive ? 'text-accent' : 'text-accent hover:opacity-80'}`}
               >
-                🎁 Resgatar brinde
+                <Gift className="h-4 w-4" aria-hidden="true" />
+                Resgatar brinde
               </NavLink>
             </li>}
           </ul>
@@ -194,35 +289,7 @@ export default function StoreLayout() {
         <Outlet />
       </main>
 
-      <footer className="mt-16 bg-brand-dark text-white">
-        <div className="mx-auto grid max-w-[1240px] gap-8 px-4 py-12 sm:grid-cols-3 sm:px-6">
-          <div>
-            <img src="/logo-connectx.webp" alt="ConnectX Brindes" className="mb-4 h-10 w-auto brightness-0 invert" />
-            <p className="text-sm text-white/70">Produtos personalizados com a sua cara: você cria no nosso Studio e a gente produz.</p>
-          </div>
-          <div>
-            <p className="mb-3 font-bold">Categorias</p>
-            <ul className="flex flex-col gap-2 text-sm text-white/70">
-              {categories.map(({ category }) => (
-                <li key={category.id}>
-                  <Link to={`/store/c/${category.slug}`} className="hover:text-white">{category.name}</Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <p className="mb-3 font-bold">Como funciona</p>
-            <ul className="flex flex-col gap-2 text-sm text-white/70">
-              <li>1. Escolha o produto</li>
-              <li>2. Personalize com foto, nome ou frase</li>
-              <li>3. Retire grátis na loja ou receba em casa</li>
-            </ul>
-          </div>
-        </div>
-        <p className="border-t border-white/10 py-4 text-center text-xs text-white/50">
-          © {new Date().getFullYear()} ConnectX Brindes
-        </p>
-      </footer>
+      <StoreFooter categories={categories} info={info} withBottomBar={location.pathname.startsWith('/store/p/')} />
 
       <StoreCartDrawer />
       <StoreAuthModal />

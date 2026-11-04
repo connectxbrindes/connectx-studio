@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { formatCurrency } from '../../utils/price';
+import { formatCurrency, storeUnitPrice } from '../../utils/price';
 import { productImage } from '../../pages/store/useStoreSession';
 
-/** Card de produto da vitrine: foto (troca pela cor ao passar nas bolinhas),
- * nome, preço e atalho pra personalizar. */
+/** Card de produto da vitrine: o card inteiro leva à página do produto.
+ * Foto troca pela cor ao passar nas bolinhas; preço já com a personalização. */
 export default function ProductCard({ product }) {
   const campaignProductIds = useStore((s) => s.campaignProductIds);
   const colors = product.options?.colors || [];
@@ -13,25 +14,28 @@ export default function ProductCard({ product }) {
   const isGift = campaignProductIds.includes(product.id);
   const shown = colors.slice(0, 5);
   const href = `/store/p/${product.slug}`;
+  const name = product.name.trim();
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-white transition-shadow hover:shadow-lg">
-      <Link to={href} className="relative block aspect-square bg-bg">
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-white transition-all hover:-translate-y-0.5 hover:border-brand-dark/20 hover:shadow-xl motion-reduce:transform-none">
+      <div className="relative aspect-square bg-white">
         <img
           src={productImage(product, color)}
-          alt={product.name}
+          alt={name}
           loading="lazy"
-          className="h-full w-full object-contain p-6 transition-transform duration-300 group-hover:scale-105 mix-blend-multiply"
+          className="h-full w-full object-contain p-[14%] transition-transform duration-300 group-hover:scale-105 motion-reduce:transform-none"
         />
         {isGift && (
           <span className="absolute left-3 top-3 rounded-full bg-accent px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
             Brinde da campanha
           </span>
         )}
-      </Link>
-      <div className="flex flex-1 flex-col gap-2 p-4">
+      </div>
+
+      <div className="flex flex-1 flex-col gap-1.5 border-t border-border/60 p-4">
         {shown.length > 1 && (
-          <div className="flex items-center gap-1.5">
+          // z-10: as bolinhas ficam acima do link que cobre o card.
+          <div className="relative z-10 mb-1 flex items-center gap-1.5">
             {shown.map((c) => (
               <button
                 key={c.id}
@@ -48,17 +52,18 @@ export default function ProductCard({ product }) {
             {colors.length > shown.length && <span className="text-xs text-text-secondary">+{colors.length - shown.length}</span>}
           </div>
         )}
-        <Link to={href} className="line-clamp-2 text-sm font-semibold text-brand-dark hover:text-brand">
-          {product.name.trim()}
-        </Link>
-        <p className="text-xs text-text-secondary">a partir de</p>
-        <p className="-mt-2 text-lg font-extrabold text-brand-dark">{formatCurrency(product.price)}</p>
-        <Link
-          to={`/store/personalizar?produto=${product.slug}${color ? `&cor=${color.id}` : ''}`}
-          className="mt-auto rounded-full bg-accent px-4 py-2.5 text-center text-sm font-bold text-white transition-opacity hover:opacity-90"
-        >
+        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-brand-dark sm:text-[15px]">
+          {/* O link cobre o card inteiro (after:inset-0). */}
+          <Link to={href} className="after:absolute after:inset-0 after:content-[''] focus:outline-none">
+            {name}
+          </Link>
+        </h3>
+        <p className="mt-auto pt-1 text-lg font-extrabold text-brand-dark">{formatCurrency(storeUnitPrice(product))}</p>
+        <p className="-mt-1 text-xs text-text-secondary">com a sua personalização</p>
+        <span className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-accent">
           Personalizar
-        </Link>
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+        </span>
       </div>
     </article>
   );

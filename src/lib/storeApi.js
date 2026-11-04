@@ -307,3 +307,24 @@ export async function uploadBannerImage(file) {
   const { data } = supabaseAdmin.storage.from('product-images').getPublicUrl(path);
   return { url: data.publicUrl, error: null };
 }
+
+// ---------------------------------------------------------------------------
+// Dados da empresa (rodapé) e políticas — públicos
+// ---------------------------------------------------------------------------
+
+let publicInfoPromise = null;
+
+/** Dados da empresa e políticas cadastrados no Painel (cache por sessão). */
+export function fetchStorePublicInfo() {
+  if (!isSupabaseConfigured) return Promise.resolve({});
+  if (!publicInfoPromise) {
+    publicInfoPromise = supabaseStore
+      .from('store_settings')
+      .select('company_name, cnpj, company_address, contact_whatsapp, contact_email, business_hours, pickup_address, exchange_policy, privacy_policy')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(({ data }) => data || {})
+      .catch(() => ({}));
+  }
+  return publicInfoPromise;
+}

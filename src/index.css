@@ -63,3 +63,11 @@
     animation: none;
   }
 }
+
+/* Faixas com rolagem lateral (menus, abas) sem a barra cinza aparecendo. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
