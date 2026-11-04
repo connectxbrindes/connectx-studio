@@ -5,11 +5,14 @@ export default function StepIndicator() {
   const currentStep = useStore((s) => s.currentStep);
   const furthestStep = useStore((s) => s.furthestStep);
   const goToStep = useStore((s) => s.goToStep);
+  // Loja virtual: o produto já vem escolhido da vitrine, então não mostra o Passo 1.
+  const isStore = useStore((s) => s.channel === 'store');
+  const steps = isStore ? STEPS.filter((s) => s.id !== 1) : STEPS;
 
   return (
     <nav aria-label="Progresso da personalização" className="w-full py-6">
       <ol className="flex items-center gap-2 sm:gap-4">
-        {STEPS.map((step, index) => {
+        {steps.map((step, index) => {
           const isCompleted = step.id < currentStep;
           const isCurrent = step.id === currentStep;
           const isReachable = step.id <= furthestStep;
@@ -30,14 +33,14 @@ export default function StepIndicator() {
                         : 'bg-white text-text-secondary border border-border'
                     }`}
                   >
-                    {isCompleted ? '✓' : step.id}
+                    {isCompleted ? '✓' : index + 1}
                   </button>
                 ) : (
                   <span
                     aria-disabled="true"
                     className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-white text-sm font-semibold text-text-secondary/50"
                   >
-                    {step.id}
+                    {index + 1}
                   </span>
                 )}
                 <span
@@ -48,7 +51,7 @@ export default function StepIndicator() {
                   {step.label}
                 </span>
               </div>
-              {index < STEPS.length - 1 && (
+              {index < steps.length - 1 && (
                 <div className="h-0.5 flex-1 rounded bg-border">
                   <div
                     className="h-0.5 rounded bg-accent transition-all duration-300"

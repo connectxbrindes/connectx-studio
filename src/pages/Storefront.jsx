@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import Header from '../components/layout/Header';
 import StepIndicator from '../components/layout/StepIndicator';
@@ -32,6 +33,9 @@ export default function Storefront({ channel = 'studio', initialProductSlug = nu
   const resetWizard = useStore((s) => s.resetWizard);
   const StepComponent = STEP_COMPONENTS[currentStep];
   const stepRef = useRef(null);
+  const navigate = useNavigate();
+  // Loja: só libera a tela depois de aplicar o produto da URL (evita piscar o Passo 1).
+  const [storeReady, setStoreReady] = useState(!isStore);
 
   // Ao entrar no Studio (ex: voltando de "Meus Pedidos"), começa do Passo 1 —
   // sem isso, o currentStep ficava no valor antigo (ex: Revisão) enquanto o
@@ -62,10 +66,21 @@ export default function Storefront({ channel = 'studio', initialProductSlug = nu
         if (color) state.selectColor(color);
         useStore.setState({ currentStep: 2, furthestStep: 2 });
       }
+      setStoreReady(true);
     }
     loadData();
     return () => { mounted = false; };
   }, [setCatalog, initialProductSlug, initialColorId]);
+
+  // Loja: o Passo 1 (escolher produto) é só dos revendedores. O cliente da loja
+  // escolhe na vitrine — voltar para o Passo 1 leva à página do produto.
+  useEffect(() => {
+    if (!isStore || !storeReady || currentStep !== 1) return;
+    // "Voltar" na Variação → página do produto; Studio zerado (ex: continuar comprando) → vitrine.
+    const { selectedProduct, furthestStep } = useStore.getState();
+    const slug = furthestStep > 1 ? selectedProduct?.slug : null;
+    navigate(slug ? `/store/p/${slug}` : '/store#produtos', { replace: true });
+  }, [isStore, storeReady, currentStep, navigate]);
 
   useEffect(() => {
     stepRef.current?.focus();
@@ -75,7 +90,7 @@ export default function Storefront({ channel = 'studio', initialProductSlug = nu
     <div className="flex min-h-screen flex-col">
       <Header channel={channel} />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-6 py-4 sm:px-10">
-        {!catalogLoaded ? (
+        {!catalogLoaded || !storeReady || (isStore && currentStep === 1) ? (
           <div className="flex h-64 items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent"></div>
           </div>
