@@ -17,5 +17,5 @@ export default function Store() {
   }, []);
 
   if (!isSupabaseConfigured) return <SupabaseNotConfigured />;
-  return <Storefront channel="store" initialProductSlug={params.get('produto')} initialColorId={params.get('cor')} />;
+  return <Storefront channel="store" initialProductSlug={params.get('produto')} initialColorId={params.get('cor')} initialQuantity={Number(params.get('qtd')) || null} />;
 }

@@ -6,7 +6,7 @@ import { fetchPriceTiers } from '../../lib/storeApi';
 /** Seletor "compre em quantidade": mostra preço por unidade e total de cada
  * faixa de atacado do produto (Painel → Loja virtual → Preços e descontos).
  * Produto sem faixas cadastradas não mostra o seletor. */
-export default function QuantityTiers({ productId, unitPrice }) {
+export default function QuantityTiers({ productId, unitPrice, onChange }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(1);
   const [priceTiers, setPriceTiers] = useState([]);
@@ -14,6 +14,7 @@ export default function QuantityTiers({ productId, unitPrice }) {
 
   useEffect(() => {
     setSelected(1);
+    onChange?.(1);
     setPriceTiers([]);
     if (productId) fetchPriceTiers(productId).then(setPriceTiers);
   }, [productId]);
@@ -55,7 +56,7 @@ export default function QuantityTiers({ productId, unitPrice }) {
                 type="button"
                 role="option"
                 aria-selected={t.qty === selected}
-                onClick={() => { setSelected(t.qty); setOpen(false); }}
+                onClick={() => { setSelected(t.qty); onChange?.(t.qty); setOpen(false); }}
                 className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-bg"
               >
                 <span>

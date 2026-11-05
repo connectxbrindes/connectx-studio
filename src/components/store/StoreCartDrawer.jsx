@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Gift } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { formatCurrency } from '../../utils/price';
-import { checkCampaignToken, fetchStoreConfig, lookupCep, quoteShipping, submitStoreOrder } from '../../lib/storeApi';
+import { formatCurrency, nextTier, tierFor } from '../../utils/price';
+import { checkCampaignToken, fetchPriceTiers, fetchStoreConfig, lookupCep, quoteShipping, submitStoreOrder } from '../../lib/storeApi';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import UpsellPopup from './UpsellPopup';
@@ -12,21 +12,34 @@ const EXTRA_DISCOUNT = 0.1;
 const round2 = (n) => Math.round(n * 100) / 100;
 import { LAST_PAYMENT_KEY } from './PaymentReturnModal';
 
-/** Mesma regra do banco (place_store_order): com token válido, 1 unidade do
- * primeiro item elegível sai grátis e os demais itens têm 10% de desconto.
+/** Mesma regra do banco (place_store_order):
+ * 1) desconto de atacado do produto pela quantidade da linha (faixas do Painel);
+ * 2) com token válido, 1 unidade do primeiro item elegível sai grátis e os
+ *    demais itens têm 10% de desconto (sobre o valor já com atacado).
  * Aqui é só pra exibir — o valor final é recalculado no servidor. */
-function computeTotals(items, token) {
+function computeTotals(items, token, tiersByProduct) {
   const giftIndex = token ? items.findIndex((it) => token.productIds.includes(it.productId)) : -1;
   let subtotal = 0;
+  let wholesaleDiscount = 0;
   let giftDiscount = 0;
   let extraDiscount = 0;
-  items.forEach((it, i) => {
-    subtotal += it.lineTotal;
-    if (giftIndex === -1) return;
-    if (i === giftIndex) giftDiscount += it.lineTotal / Math.max(it.quantity, 1);
-    else extraDiscount += round2(it.lineTotal * EXTRA_DISCOUNT);
+  const lines = items.map((it, i) => {
+    const gross = it.lineTotal;
+    const tier = tierFor(tiersByProduct[it.productId], it.quantity);
+    const wholesale = tier ? round2(gross * tier.discountPct / 100) : 0;
+    const net = gross - wholesale;
+    subtotal += gross;
+    wholesaleDiscount += wholesale;
+    if (giftIndex !== -1) {
+      if (i === giftIndex) giftDiscount += round2(net / Math.max(it.quantity, 1));
+      else extraDiscount += round2(net * EXTRA_DISCOUNT);
+    }
+    return { tier, wholesale, net, next: nextTier(tiersByProduct[it.productId], it.quantity) };
   });
-  return { giftIndex, subtotal, giftDiscount, extraDiscount, itemsTotal: subtotal - giftDiscount - extraDiscount };
+  return {
+    giftIndex, lines, subtotal, wholesaleDiscount, giftDiscount, extraDiscount,
+    itemsTotal: subtotal - wholesaleDiscount - giftDiscount - extraDiscount,
+  };
 }
 
 const formatCep = (v) => {
@@ -77,9 +90,21 @@ export default function StoreCartDrawer() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
 
+  const [tiersByProduct, setTiersByProduct] = useState({});
+
   useEffect(() => {
     fetchStoreConfig().then(setConfig);
   }, []);
+
+  // Faixas de atacado: recarrega ao abrir o carrinho (o Painel pode ter mudado).
+  useEffect(() => {
+    if (!isOpen) return;
+    fetchPriceTiers().then((tiers) => {
+      const grouped = {};
+      tiers.forEach((t) => { (grouped[t.productId] ||= []).push(t); });
+      setTiersByProduct(grouped);
+    });
+  }, [isOpen]);
 
   useEffect(() => {
     if (customer?.phone) setPhone((p) => p || customer.phone);
@@ -99,7 +124,7 @@ export default function StoreCartDrawer() {
     setServiceId(null);
   }, [cartKey]);
 
-  const totals = useMemo(() => computeTotals(items, token), [items, token]);
+  const totals = useMemo(() => computeTotals(items, token, tiersByProduct), [items, token, tiersByProduct]);
   const tokenWithoutProduct = token && totals.giftIndex === -1;
   const selectedService = quote?.options?.find((o) => o.id === serviceId) || null;
   const shippingPrice = delivery === 'shipping' ? selectedService?.price || 0 : 0;
@@ -285,6 +310,7 @@ export default function StoreCartDrawer() {
             <ul className="divide-y divide-border px-6">
               {items.map((item, index) => {
                 const isGift = index === totals.giftIndex;
+                const line = totals.lines[index];
                 return (
                   <li key={item.id} className="flex gap-4 py-5">
                     <img
@@ -317,8 +343,27 @@ export default function StoreCartDrawer() {
                           <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
                           <button type="button" onClick={() => updateQuantity(item.id, item.quantity + 1)} className="h-8 w-8 text-text-secondary hover:text-text-primary">+</button>
                         </div>
-                        <p className="font-semibold">{formatCurrency(item.lineTotal)}</p>
+                        <p className="text-right font-semibold">
+                          {line?.wholesale > 0 && (
+                            <span className="block text-xs font-normal text-text-secondary line-through">{formatCurrency(item.lineTotal)}</span>
+                          )}
+                          {formatCurrency(line ? line.net : item.lineTotal)}
+                        </p>
                       </div>
+                      {line?.tier && (
+                        <p className="text-xs font-semibold text-green-600">
+                          Preço de atacado: −{+line.tier.discountPct}% ({line.tier.minQty}+ unidades)
+                        </p>
+                      )}
+                      {line?.next && (
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.id, line.next.minQty)}
+                          className="self-start text-left text-xs font-semibold text-accent hover:underline"
+                        >
+                          Leve {line.next.minQty} unidades e pague {+line.next.discountPct}% menos em cada
+                        </button>
+                      )}
                     </div>
                   </li>
                 );
@@ -454,6 +499,12 @@ export default function StoreCartDrawer() {
                 <dt className="text-text-secondary">Subtotal</dt>
                 <dd>{formatCurrency(totals.subtotal)}</dd>
               </div>
+              {totals.wholesaleDiscount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <dt>Desconto de atacado</dt>
+                  <dd>− {formatCurrency(totals.wholesaleDiscount)}</dd>
+                </div>
+              )}
               {totals.giftDiscount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <dt>Brinde (código do cartão)</dt>

@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { formatCurrency, computePersonalizationFee, computeLineTotal } from '../../utils/price';
+import { formatCurrency, computePersonalizationFee, computeLineTotal, nextTier, tierFor } from '../../utils/price';
+import { fetchPriceTiers } from '../../lib/storeApi';
 import { useCanvasExport } from '../../hooks/useCanvasExport';
 import Button from '../ui/Button';
 import ProductPreview from '../shared/ProductPreview';
@@ -64,6 +65,8 @@ export default function Step4Review() {
   const previewMode = useStore((s) => s.previewMode);
   const hidePrices = useStore((s) => s.identity?.hidePrices);
   const cartItems = useStore((s) => s.items);
+  const isStore = useStore((s) => s.channel === 'store');
+  const [priceTiers, setPriceTiers] = useState([]);
   const { exportCanvas } = useCanvasExport();
   const previewRef = useRef(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -88,6 +91,15 @@ export default function Step4Review() {
 
   const fee = computePersonalizationFee(elements);
   const lineTotal = computeLineTotal({ unitPrice: product.price, quantity, elements });
+
+  // Loja: desconto de atacado do produto (o valor final é recalculado no servidor).
+  useEffect(() => {
+    setPriceTiers([]);
+    if (isStore && product?.id) fetchPriceTiers(product.id).then(setPriceTiers);
+  }, [isStore, product?.id]);
+  const tier = tierFor(priceTiers, quantity);
+  const upcoming = nextTier(priceTiers, quantity);
+  const wholesaleDiscount = tier ? Math.round(lineTotal * tier.discountPct) / 100 : 0;
 
   /** Executa a adição ao carrinho de fato (sem verificação de duplicata). */
   const doAddToCart = async () => {
@@ -276,10 +288,25 @@ export default function Step4Review() {
                   <span>{formatCurrency(fee)}</span>
                 </div>
               )}
+              {wholesaleDiscount > 0 && (
+                <div className="flex justify-between font-medium text-green-600">
+                  <span>Atacado −{+tier.discountPct}% ({tier.minQty}+ unidades)</span>
+                  <span>− {formatCurrency(wholesaleDiscount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-lg font-bold text-text-primary">
                 <span>Total</span>
-                <span>{formatCurrency(lineTotal)}</span>
+                <span>{formatCurrency(lineTotal - wholesaleDiscount)}</span>
               </div>
+              {upcoming && (
+                <button
+                  type="button"
+                  onClick={() => setQuantity(upcoming.minQty)}
+                  className="text-left text-xs font-semibold text-accent hover:underline"
+                >
+                  Leve {upcoming.minQty} unidades e pague {+upcoming.discountPct}% menos em cada
+                </button>
+              )}
             </div>
           )}
 

@@ -23,7 +23,7 @@ const STEP_COMPONENTS = {
 
 // `channel="store"` = loja virtual de varejo (/store): carrinho com token,
 // preços visíveis e cadastro do cliente no checkout.
-export default function Storefront({ channel = 'studio', initialProductSlug = null, initialColorId = null }) {
+export default function Storefront({ channel = 'studio', initialProductSlug = null, initialColorId = null, initialQuantity = null }) {
   const isStore = channel === 'store';
   const setChannel = useStore((s) => s.setChannel);
   const currentStep = useStore((s) => s.currentStep);
@@ -64,13 +64,15 @@ export default function Storefront({ channel = 'studio', initialProductSlug = nu
         state.selectProduct(product.id);
         const color = product.options.colors.find((c) => c.id === initialColorId);
         if (color) state.selectColor(color);
+        // Quantidade escolhida no seletor de atacado da página do produto.
+        if (initialQuantity > 1) state.setQuantity(Math.min(initialQuantity, 10000));
         useStore.setState({ currentStep: 2, furthestStep: 2 });
       }
       setStoreReady(true);
     }
     loadData();
     return () => { mounted = false; };
-  }, [setCatalog, initialProductSlug, initialColorId]);
+  }, [setCatalog, initialProductSlug, initialColorId, initialQuantity]);
 
   // Loja: o Passo 1 (escolher produto) é só dos revendedores. O cliente da loja
   // escolhe na vitrine — voltar para o Passo 1 leva à página do produto.

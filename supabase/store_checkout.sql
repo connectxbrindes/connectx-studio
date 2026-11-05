@@ -82,6 +82,10 @@ declare
   v_qty int;
   v_fee numeric;
   v_gross numeric;
+  v_tier_pct numeric;
+  v_tier_min int;
+  v_wholesale numeric;
+  v_net numeric;
   v_disc numeric;
   v_total numeric;
   v_order_number text;
@@ -140,12 +144,24 @@ begin
                    and jsonb_array_length(r.d->'personalization_snapshot') > 0
               then c_personalization_fee else 0 end;
     v_gross := (v_product.base_price + v_fee) * v_qty;
+
+    -- Desconto de atacado do produto: a maior faixa alcançada pela quantidade
+    -- (Painel → Loja virtual → Preços e descontos).
+    v_tier_pct := null;
+    v_tier_min := null;
+    select discount_pct, min_qty into v_tier_pct, v_tier_min
+    from store_price_tiers
+    where product_id = v_product.id and min_qty <= v_qty
+    order by min_qty desc limit 1;
+    v_wholesale := case when v_tier_pct is not null then round(v_gross * v_tier_pct / 100, 2) else 0 end;
+    v_net := v_gross - v_wholesale;
+
     if v_gift_idx is not null and r.i = v_gift_idx then
-      v_disc := v_product.base_price + v_fee;              -- 1 unidade grátis (brinde)
+      v_disc := v_wholesale + round(v_net / v_qty, 2);           -- 1 unidade grátis (brinde)
     elsif v_gift_idx is not null then
-      v_disc := round(v_gross * c_extra_discount, 2);      -- 10% nos demais itens
+      v_disc := v_wholesale + round(v_net * c_extra_discount, 2); -- 10% nos demais itens
     else
-      v_disc := 0;
+      v_disc := v_wholesale;
     end if;
     v_total := v_gross - v_disc;
 
@@ -157,6 +173,8 @@ begin
     ) values (
       v_name, concat_ws(' · ', v_phone, v_email),
       concat_ws(E'\n',
+        case when v_tier_pct is not null then
+          'Atacado ' || trim(to_char(v_tier_pct, 'FM990.##')) || '% (a partir de ' || v_tier_min || ' un.)' end,
         case when v_gift_idx is not null and r.i = v_gift_idx then 'BRINDE — token ' || v_code
              when v_gift_idx is not null then 'Desconto campanha 10% (token ' || v_code || ')' end,
         v_delivery_note,

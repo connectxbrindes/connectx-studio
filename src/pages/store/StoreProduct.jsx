@@ -18,6 +18,7 @@ export default function StoreProduct() {
   const product = catalog.find((p) => p.slug === slug);
   const colors = product?.options?.colors || [];
   const [colorId, setColorId] = useState(null);
+  const [quantity, setQuantity] = useState(1);
   const color = colors.find((c) => c.id === colorId) || colors[0] || null;
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function StoreProduct() {
   const related = catalog.filter((p) => p.id !== product.id).slice(0, 4);
 
   const personalize = () =>
-    navigate(`/store/personalizar?produto=${product.slug}${color ? `&cor=${color.id}` : ''}`);
+    navigate(`/store/personalizar?produto=${product.slug}${color ? `&cor=${color.id}` : ''}${quantity > 1 ? `&qtd=${quantity}` : ''}`);
 
   return (
     <>
@@ -104,7 +105,7 @@ export default function StoreProduct() {
               </p>
             </div>
 
-            <QuantityTiers productId={product.id} unitPrice={storeUnitPrice(product)} />
+            <QuantityTiers productId={product.id} unitPrice={storeUnitPrice(product)} onChange={setQuantity} />
 
             {isGift && (
               <div className="rounded-2xl border border-accent/30 bg-[#fff4f0] p-4 text-sm">

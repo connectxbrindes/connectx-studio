@@ -1,3 +1,10 @@
+// Mudou a quantidade no carrinho → recalcula o total da linha (preço + personalização).
+const withQuantity = (item, quantity) => ({
+  ...item,
+  quantity,
+  lineTotal: (Number(item.unitPrice) + Number(item.personalizationFee || 0)) * quantity,
+});
+
 export const createCartSlice = (set, get) => ({
   items: [],
   isDrawerOpen: false,
@@ -14,7 +21,7 @@ export const createCartSlice = (set, get) => ({
   // Trava no pedido mínimo do item (padrão 1).
   updateQuantity: (id, quantity) => set((state) => ({
     items: state.items.map((item) =>
-      item.id === id ? { ...item, quantity: Math.max(item.minOrderQty || 1, quantity) } : item
+      item.id === id ? withQuantity(item, Math.max(item.minOrderQty || 1, quantity)) : item
     ),
   })),
 
