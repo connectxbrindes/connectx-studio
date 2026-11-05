@@ -37,6 +37,10 @@ const formatCep = (v) => {
 const inputClass =
   'w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-text-primary placeholder:text-text-secondary';
 
+// Entrega pelos Correios oculta até a API oficial dos Correios ser liberada.
+// Para reativar (radio + CEP + cálculo), troque para true.
+const SHOW_CORREIOS_DELIVERY = false;
+
 const EMPTY_ADDRESS = { cep: '', street: '', number: '', complement: '', district: '', city: '', state: '' };
 
 export default function StoreCartDrawer() {
@@ -367,11 +371,13 @@ export default function StoreCartDrawer() {
                   </span>
                   <span className="font-semibold text-green-600">Grátis</span>
                 </label>
-                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 ${delivery === 'shipping' ? 'border-text-primary' : 'border-border'}`}>
-                  <input type="radio" name="delivery" checked={delivery === 'shipping'} onChange={() => setDelivery('shipping')} />
-                  <span className="flex-1">Receber em casa (Correios)</span>
-                  {selectedService && delivery === 'shipping' && <span className="font-semibold">{formatCurrency(selectedService.price)}</span>}
-                </label>
+                {SHOW_CORREIOS_DELIVERY && (
+                  <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 ${delivery === 'shipping' ? 'border-text-primary' : 'border-border'}`}>
+                    <input type="radio" name="delivery" checked={delivery === 'shipping'} onChange={() => setDelivery('shipping')} />
+                    <span className="flex-1">Receber em casa (Correios)</span>
+                    {selectedService && delivery === 'shipping' && <span className="font-semibold">{formatCurrency(selectedService.price)}</span>}
+                  </label>
+                )}
 
                 {delivery === 'shipping' && (
                   <div className="flex flex-col gap-3 pt-1">
