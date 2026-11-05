@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Apresentacao from './pages/Apresentacao';
 import Storefront from './pages/Storefront';
 import StaffLogin from './pages/StaffLogin';
@@ -15,6 +15,10 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminStudio from './pages/admin/AdminStudio';
 import AdminTokens from './pages/admin/AdminTokens';
 import AdminBanners from './pages/admin/AdminBanners';
+import StoreSettingsCard from './pages/admin/StoreSettingsCard';
+import StoreAdminLayout from './pages/admin/store/StoreAdminLayout';
+import StorePricesTab from './pages/admin/store/StorePricesTab';
+import StoreShippingTab from './pages/admin/store/StoreShippingTab';
 import Store from './pages/Store';
 import StoreLayout from './pages/store/StoreLayout';
 import StoreHome from './pages/store/StoreHome';
@@ -106,21 +110,23 @@ function App() {
           }
         />
         <Route
-          path="banners"
+          path="loja"
           element={
             <RequirePermission section="tokens">
-              <AdminBanners />
+              <StoreAdminLayout />
             </RequirePermission>
           }
-        />
-        <Route
-          path="tokens"
-          element={
-            <RequirePermission section="tokens">
-              <AdminTokens />
-            </RequirePermission>
-          }
-        />
+        >
+          <Route index element={<Navigate to="banners" replace />} />
+          <Route path="banners" element={<AdminBanners />} />
+          <Route path="precos" element={<StorePricesTab />} />
+          <Route path="tokens" element={<AdminTokens />} />
+          <Route path="frete" element={<StoreShippingTab />} />
+          <Route path="configuracoes" element={<StoreSettingsCard />} />
+        </Route>
+        {/* Endereços antigos do Painel */}
+        <Route path="tokens" element={<Navigate to="/admin/loja/tokens" replace />} />
+        <Route path="banners" element={<Navigate to="/admin/loja/banners" replace />} />
         <Route
           path="usuarios"
           element={

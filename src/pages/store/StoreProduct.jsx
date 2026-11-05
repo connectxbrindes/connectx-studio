@@ -4,6 +4,7 @@ import { useStore } from '../../store/useStore';
 import { Eye, Gift, Palette, ShieldCheck, ShoppingBag, Store, Truck } from 'lucide-react';
 import { formatCurrency, PERSONALIZATION_FEE, storeUnitPrice } from '../../utils/price';
 import ProductCard from '../../components/store/ProductCard';
+import QuantityTiers from '../../components/store/QuantityTiers';
 import { productImage } from './useStoreSession';
 
 /** Página do produto: fotos por cor, preço, descrição e botão Personalizar
@@ -102,6 +103,8 @@ export default function StoreProduct() {
                 Produto {formatCurrency(product.price)} + personalização {formatCurrency(PERSONALIZATION_FEE)} (foto, nome ou frase)
               </p>
             </div>
+
+            <QuantityTiers productId={product.id} unitPrice={storeUnitPrice(product)} />
 
             {isGift && (
               <div className="rounded-2xl border border-accent/30 bg-[#fff4f0] p-4 text-sm">

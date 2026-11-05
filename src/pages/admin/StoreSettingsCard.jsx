@@ -90,7 +90,7 @@ export default function StoreSettingsCard() {
 
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={Boolean(form.shipping_enabled)} onChange={(e) => setForm({ ...form, shipping_enabled: e.target.checked })} />
-        Oferecer entrega pelos Correios na loja (usa os preços da Tabela de frete abaixo)
+        Oferecer entrega pelos Correios na loja (usa os preços da aba Frete)
       </label>
 
       <div className="border-t border-border pt-4">

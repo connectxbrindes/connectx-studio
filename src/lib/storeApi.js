@@ -343,3 +343,33 @@ export function fetchStorePublicInfo() {
   }
   return publicInfoPromise;
 }
+
+// ---------- Descontos de atacado (Painel → Loja virtual → Preços e descontos) ----------
+
+/** Faixas de desconto por quantidade, por produto, da menor para a maior.
+ * Sem productId traz de todos (Painel). Leitura pública. */
+export async function fetchPriceTiers(productId) {
+  if (!isSupabaseConfigured) return [];
+  let query = supabaseStore.from('store_price_tiers').select('product_id, min_qty, discount_pct').order('min_qty');
+  if (productId) query = query.eq('product_id', productId);
+  const { data, error } = await query;
+  if (error) console.error('Error fetching price tiers:', error);
+  return (data || []).map((t) => ({ productId: t.product_id, minQty: t.min_qty, discountPct: Number(t.discount_pct) }));
+}
+
+/** Substitui as faixas de um produto pelas informadas no Painel. */
+export async function savePriceTiers(productId, tiers) {
+  const { error: delError } = await supabaseAdmin.from('store_price_tiers').delete().eq('product_id', productId);
+  if (delError) return { error: delError };
+  if (tiers.length === 0) return { error: null };
+  const { error } = await supabaseAdmin
+    .from('store_price_tiers')
+    .insert(tiers.map((t) => ({ product_id: productId, min_qty: t.minQty, discount_pct: t.discountPct })));
+  return { error };
+}
+
+/** Atualiza o preço de venda (base_price) de um produto. */
+export async function saveProductPrice(productId, basePrice) {
+  const { error } = await supabaseAdmin.from('products').update({ base_price: basePrice }).eq('id', productId);
+  return { error };
+}

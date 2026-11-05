@@ -10,8 +10,6 @@ import {
 } from '../../lib/storeApi';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
-import StoreSettingsCard from './StoreSettingsCard';
-import ShippingRatesCard from './ShippingRatesCard';
 
 const STATUS_LABELS = { active: 'Disponível', used: 'Usado', inactive: 'Desativado' };
 const STATUS_STYLES = {
@@ -137,7 +135,7 @@ export default function AdminTokens() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Loja virtual · Tokens da campanha</h2>
+          <h3 className="text-lg font-bold">Tokens da campanha</h3>
           <p className="text-sm text-text-secondary">
             Códigos de uso único impressos nos cartões. Cada código dá 1 unidade grátis do produto do lote na loja
             virtual (/store) e libera 10% de desconto nos demais itens do pedido.
@@ -145,9 +143,6 @@ export default function AdminTokens() {
         </div>
         <Button onClick={() => { setForm(EMPTY_FORM); setFormError(''); setIsModalOpen(true); }}>+ Gerar lote</Button>
       </div>
-
-      <StoreSettingsCard />
-      <ShippingRatesCard />
 
       <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-panel p-4">
         <label className="flex flex-1 flex-col gap-1 text-sm">
