@@ -9,6 +9,7 @@ const PERMISSIONS = [
   { value: 'resellers', label: 'Revendedores' },
   { value: 'studio', label: 'Studio (prévia)' },
   { value: 'tokens', label: 'Loja virtual (banners, preços, tokens, frete)' },
+  { value: 'arts', label: 'Central de Artes (chamados das unidades)' },
 ];
 
 const permissionLabel = (value) => PERMISSIONS.find((p) => p.value === value)?.label || value;

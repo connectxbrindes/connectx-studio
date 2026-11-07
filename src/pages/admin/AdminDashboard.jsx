@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { useNavigate, NavLink, Outlet } from 'react-router-dom';
+import { fetchArtRequests, subscribeArtChanges } from '../../lib/artsApi';
 import { supabaseAdmin } from '../../lib/supabaseClient';
 import { useAdminAuth } from './AdminAuthContext';
 import Button from '../../components/ui/Button';
@@ -6,6 +8,18 @@ import Button from '../../components/ui/Button';
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { role, hasPermission } = useAdminAuth();
+  const canArts = hasPermission('arts');
+  const [artsUnread, setArtsUnread] = useState(0);
+
+  // Contador de chamados com novidade na Central de Artes (menu lateral).
+  useEffect(() => {
+    if (!canArts) return undefined;
+    const load = () => fetchArtRequests(supabaseAdmin).then((list) => setArtsUnread(list.filter((r) => r.teamUnread > 0).length));
+    load();
+    const unsubscribe = subscribeArtChanges(supabaseAdmin, 'sidebar', load);
+    const timer = setInterval(load, 60000);
+    return () => { unsubscribe(); clearInterval(timer); };
+  }, [canArts]);
 
   const handleLogout = async () => {
     await supabaseAdmin.auth.signOut();
@@ -18,6 +32,7 @@ export default function AdminDashboard() {
     { to: '/admin/revendedores', label: 'Revendedores', show: hasPermission('resellers') },
     { to: '/admin/studio', label: 'Studio', show: hasPermission('studio') },
     { to: '/admin/loja', label: 'Loja virtual', show: hasPermission('tokens') },
+    { to: '/admin/artes', label: 'Central de Artes', show: canArts, badge: artsUnread },
     // Gestão de usuários é exclusiva do master.
     { to: '/admin/usuarios', label: 'Usuários', show: role === 'master' },
   ].filter((item) => item.show);
@@ -45,7 +60,12 @@ export default function AdminDashboard() {
                 }`
               }
             >
-              {item.label}
+              <span className="flex items-center justify-between">
+                {item.label}
+                {item.badge > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-white">{item.badge}</span>
+                )}
+              </span>
             </NavLink>
           ))}
         </nav>

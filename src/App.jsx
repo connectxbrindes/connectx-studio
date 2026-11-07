@@ -20,6 +20,7 @@ import StoreAdminLayout from './pages/admin/store/StoreAdminLayout';
 import StorePricesTab from './pages/admin/store/StorePricesTab';
 import StoreShippingTab from './pages/admin/store/StoreShippingTab';
 import Store from './pages/Store';
+import AdminArts from './pages/admin/AdminArts';
 import StoreLayout from './pages/store/StoreLayout';
 import StoreHome from './pages/store/StoreHome';
 import StoreListing from './pages/store/StoreListing';
@@ -124,6 +125,14 @@ function App() {
           <Route path="frete" element={<StoreShippingTab />} />
           <Route path="configuracoes" element={<StoreSettingsCard />} />
         </Route>
+        <Route
+          path="artes"
+          element={
+            <RequirePermission section="arts">
+              <AdminArts />
+            </RequirePermission>
+          }
+        />
         {/* Endereços antigos do Painel */}
         <Route path="tokens" element={<Navigate to="/admin/loja/tokens" replace />} />
         <Route path="banners" element={<Navigate to="/admin/loja/banners" replace />} />
