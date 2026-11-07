@@ -8,7 +8,8 @@ const REQUEST_FIELDS =
 
 const toRequest = (r) => ({
   id: r.id,
-  number: r.number,
+  // Número do chamado para exibir: 3 dígitos (#001, #002…).
+  number: String(r.number).padStart(3, '0'),
   resellerId: r.reseller_id,
   unit: r.reseller_name,
   title: r.title,

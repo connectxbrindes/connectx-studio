@@ -10,7 +10,7 @@ $$;
 
 create table if not exists public.art_requests (
   id uuid primary key default gen_random_uuid(),
-  number bigint generated always as identity (start with 101) unique,
+  number bigint generated always as identity (start with 1) unique,
   reseller_id uuid not null references public.resellers(id) on delete cascade,
   reseller_name text not null default '',
   created_by uuid default auth.uid(),
