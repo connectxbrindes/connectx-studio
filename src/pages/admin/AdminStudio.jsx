@@ -50,7 +50,6 @@ export default function AdminStudio() {
   return (
     <div>
       <div className="mb-4">
-        <h2 className="text-2xl font-bold">Studio — prévia / teste</h2>
         <p className="mt-1 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-sm text-accent">
           Modo teste: nenhum pedido é criado aqui. Use pra conferir produtos/modelos ou mostrar a prévia pro cliente.
         </p>

@@ -7,7 +7,7 @@ const PERMISSIONS = [
   { value: 'orders', label: 'Pedidos' },
   { value: 'products', label: 'Produtos' },
   { value: 'resellers', label: 'Revendedores' },
-  { value: 'studio', label: 'Studio (prévia)' },
+  { value: 'studio', label: 'Studio (prévia e coleções)' },
   { value: 'tokens', label: 'Loja virtual (banners, preços, tokens, frete)' },
   { value: 'arts', label: 'Central de Artes (chamados das unidades)' },
 ];

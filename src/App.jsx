@@ -21,6 +21,8 @@ import StorePricesTab from './pages/admin/store/StorePricesTab';
 import StoreShippingTab from './pages/admin/store/StoreShippingTab';
 import Store from './pages/Store';
 import AdminArts from './pages/admin/AdminArts';
+import StudioAdminLayout from './pages/admin/studio/StudioAdminLayout';
+import StudioCollectionsTab from './pages/admin/studio/StudioCollectionsTab';
 import StoreLayout from './pages/store/StoreLayout';
 import StoreHome from './pages/store/StoreHome';
 import StoreListing from './pages/store/StoreListing';
@@ -148,10 +150,13 @@ function App() {
           path="studio"
           element={
             <RequirePermission section="studio">
-              <AdminStudio />
+              <StudioAdminLayout />
             </RequirePermission>
           }
-        />
+        >
+          <Route index element={<AdminStudio />} />
+          <Route path="colecoes" element={<StudioCollectionsTab />} />
+        </Route>
       </Route>
     </Routes>
   );

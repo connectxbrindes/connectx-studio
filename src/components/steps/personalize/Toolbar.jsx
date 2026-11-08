@@ -1,14 +1,46 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../../store/useStore';
 import { uploadOrderOriginalImage } from '../../../lib/api';
 import Button from '../../ui/Button';
 import InfoHint from '../../ui/InfoHint';
+import { fetchStudioCollections } from '../../../lib/collectionsApi';
+import CollectionsModal from './CollectionsModal';
 
 export default function Toolbar() {
   const addTextElement = useStore((s) => s.addTextElement);
   const addImageElement = useStore((s) => s.addImageElement);
   const updateElement = useStore((s) => s.updateElement);
   const fileInputRef = useRef(null);
+  const [collections, setCollections] = useState([]);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    fetchStudioCollections().then((c) => { if (alive) setCollections(c); });
+    return () => { alive = false; };
+  }, []);
+
+  // Mede a proporção REAL do container de edição, pra a caixa da imagem nascer
+  // no formato certo (sem esticar).
+  const containerAspect = () => {
+    const rect = document.querySelector('[data-tour="canvas"]')?.getBoundingClientRect();
+    return rect && rect.height > 0 ? rect.width / rect.height : null;
+  };
+
+  // Arte da coleção: já está guardada no servidor, então o próprio endereço
+  // serve como original em qualidade máxima para o pedido.
+  const pickCollectionImage = (image) => new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      addImageElement(image.url, img.naturalWidth || 1000, img.naturalHeight || 1000, containerAspect());
+      updateElement(useStore.getState().selectedElementId, { originalImageUrl: image.url });
+      setCollectionsOpen(false);
+      resolve();
+    };
+    img.onerror = () => resolve();
+    img.src = image.url;
+  });
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -41,7 +73,7 @@ export default function Toolbar() {
   };
 
   return (
-    <div data-tour="ferramentas" className="flex items-center gap-3">
+    <div data-tour="ferramentas" className="flex flex-wrap items-center gap-3 [&>button]:whitespace-nowrap">
       <Button variant="secondary" onClick={addTextElement}>
         + Texto
       </Button>
@@ -50,6 +82,13 @@ export default function Toolbar() {
         + Imagem
       </Button>
       <InfoHint label="Adicionar imagem" align="left" text="Envia uma foto ou logo do seu dispositivo. Depois arraste para posicionar e use os cantos para redimensionar sobre o produto." />
+      <Button variant="secondary" onClick={() => setCollectionsOpen(true)}>
+        Coleções
+      </Button>
+      <InfoHint label="Coleções" align="left" text="Artes prontas para aplicar no produto. Escolha uma e depois arraste e redimensione como quiser." />
+      {collectionsOpen && (
+        <CollectionsModal collections={collections} onPick={pickCollectionImage} onClose={() => setCollectionsOpen(false)} />
+      )}
       <input
         ref={fileInputRef}
         type="file"
