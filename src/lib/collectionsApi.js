@@ -3,13 +3,15 @@ import { supabase, supabaseAdmin } from './supabaseClient';
 // Coleções do Studio: artes prontas que o cliente aplica no produto pelo
 // botão "Coleções" (passo Personalizar). Cadastro no Painel → Studio → Coleções.
 
-const SELECT = 'id, name, sort_order, active, images:studio_collection_images ( id, name, image_url, storage_path, sort_order, created_at )';
+const SELECT = 'id, name, sort_order, active, category_ids, images:studio_collection_images ( id, name, image_url, storage_path, sort_order, created_at )';
 
 const toCollection = (c) => ({
   id: c.id,
   name: c.name,
   sortOrder: c.sort_order,
   active: c.active,
+  // Categorias onde a coleção aparece. Vazio = todas.
+  categoryIds: c.category_ids || [],
   images: (c.images || [])
     .slice()
     .sort((a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at))
@@ -60,6 +62,7 @@ export async function updateCollection(id, patch) {
   if (patch.name !== undefined) row.name = patch.name.trim();
   if (patch.active !== undefined) row.active = patch.active;
   if (patch.sortOrder !== undefined) row.sort_order = patch.sortOrder;
+  if (patch.categoryIds !== undefined) row.category_ids = patch.categoryIds;
   const { error } = await supabaseAdmin.from('studio_collections').update(row).eq('id', id);
   return { error };
 }

@@ -11,12 +11,18 @@ export default function Toolbar() {
   const addImageElement = useStore((s) => s.addImageElement);
   const updateElement = useStore((s) => s.updateElement);
   const fileInputRef = useRef(null);
-  const [collections, setCollections] = useState([]);
+  const product = useStore((s) => s.selectedProduct);
+  const allowImage = product?.allowImageUpload !== false;
+  const allowCollections = product?.allowCollections !== false;
+  const [allCollections, setAllCollections] = useState([]);
+  // Só as coleções liberadas para a categoria do produto (vazio = todas).
+  const categoryId = product?.category?.id;
+  const collections = allCollections.filter((c) => !c.categoryIds?.length || (categoryId && c.categoryIds.includes(categoryId)));
   const [collectionsOpen, setCollectionsOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    fetchStudioCollections().then((c) => { if (alive) setCollections(c); });
+    fetchStudioCollections().then((c) => { if (alive) setAllCollections(c); });
     return () => { alive = false; };
   }, []);
 
@@ -78,14 +84,23 @@ export default function Toolbar() {
         + Texto
       </Button>
       <InfoHint label="Adicionar texto" align="left" text="Cria uma caixa de texto no produto. Depois é só digitar no campo 'Conteúdo' e ajustar fonte, cor e tamanho no painel à direita." />
-      <Button variant="secondary" onClick={() => fileInputRef.current.click()}>
-        + Imagem
-      </Button>
-      <InfoHint label="Adicionar imagem" align="left" text="Envia uma foto ou logo do seu dispositivo. Depois arraste para posicionar e use os cantos para redimensionar sobre o produto." />
-      <Button variant="secondary" onClick={() => setCollectionsOpen(true)}>
-        Coleções
-      </Button>
-      <InfoHint label="Coleções" align="left" text="Artes prontas para aplicar no produto. Escolha uma e depois arraste e redimensione como quiser." />
+      {/* "+ Imagem" e "Coleções" dependem do cadastro do produto no Painel. */}
+      {allowImage && (
+        <>
+          <Button variant="secondary" onClick={() => fileInputRef.current.click()}>
+            + Imagem
+          </Button>
+          <InfoHint label="Adicionar imagem" align="left" text="Envia uma foto ou logo do seu dispositivo. Depois arraste para posicionar e use os cantos para redimensionar sobre o produto." />
+        </>
+      )}
+      {allowCollections && (
+        <>
+          <Button variant="secondary" onClick={() => setCollectionsOpen(true)}>
+            Coleções
+          </Button>
+          <InfoHint label="Coleções" align="left" text="Artes prontas para aplicar no produto. Escolha uma e depois arraste e redimensione como quiser." />
+        </>
+      )}
       {collectionsOpen && (
         <CollectionsModal collections={collections} onPick={pickCollectionImage} onClose={() => setCollectionsOpen(false)} />
       )}

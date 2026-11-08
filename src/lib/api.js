@@ -36,6 +36,8 @@ export async function fetchCatalog() {
         has_3d_viewer,
         model_3d_url,
         uses_device_models,
+        allow_image_upload,
+        allow_collections,
         category:categories ( id, name, slug ),
         subcategory:subcategories ( id, name, slug, category:categories ( id, name, slug ) ),
         brand:brands ( id, name, slug ),
@@ -104,6 +106,9 @@ export async function fetchCatalog() {
       personalizationArea: p.personalization_area,
       hasViewer3d: Boolean(p.has_3d_viewer && p.model_3d_url),
       model3dUrl: p.model_3d_url || null,
+      // Passo Personalizar: quais botões aparecem (cadastro do produto no Painel).
+      allowImageUpload: p.allow_image_upload !== false,
+      allowCollections: p.allow_collections !== false,
       options: {
         colors: sortedColors.map((c) => ({
           id: c.id,
@@ -306,6 +311,7 @@ export async function fetchAdminProducts() {
       id, name, slug, base_price, reseller_price, min_order_qty, description, cover_image_url, personalization_area, status,
       ship_weight_kg, ship_height_cm, ship_width_cm, ship_length_cm,
       category_id, subcategory_id, brand_id, has_3d_viewer, model_3d_url, uses_device_models,
+      allow_image_upload, allow_collections,
       category:categories ( id, name, slug ),
       subcategory:subcategories ( id, name, category:categories ( id, name ) ),
       brand:brands ( id, name ),

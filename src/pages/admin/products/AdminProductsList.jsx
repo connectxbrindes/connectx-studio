@@ -169,6 +169,8 @@ export default function AdminProductsList() {
       has_3d_viewer: form.has_3d_viewer,
       model_3d_url: form.has_3d_viewer ? form.model_3d_url || null : null,
       uses_device_models: form.uses_device_models,
+      allow_image_upload: form.allow_image_upload !== false,
+      allow_collections: form.allow_collections !== false,
     };
 
     let result;

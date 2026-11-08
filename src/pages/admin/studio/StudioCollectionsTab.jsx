@@ -4,6 +4,7 @@ import {
   addCollectionImage, createCollection, deleteCollection, deleteCollectionImage, fetchAdminCollections, updateCollection,
 } from '../../../lib/collectionsApi';
 import Button from '../../../components/ui/Button';
+import { fetchCategories } from '../../../lib/api';
 
 const ACCEPT = 'image/png,image/jpeg,image/webp,image/svg+xml,image/gif,.jpg,.jpeg,.jfif,.png,.webp,.svg,.gif';
 const MAX_MB = 15;
@@ -15,6 +16,9 @@ export default function StudioCollectionsTab() {
   const [selectedId, setSelectedId] = useState(null);
   const [newName, setNewName] = useState('');
   const [message, setMessage] = useState('');
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => { fetchCategories().then(setCategories); }, []);
 
   const load = async () => {
     const list = await fetchAdminCollections();
@@ -93,6 +97,7 @@ export default function StudioCollectionsTab() {
           <CollectionEditor
             key={selected.id}
             collection={selected}
+            categories={categories}
             onChange={(next) => setCollections((cs) => cs.map((c) => (c.id === next.id ? next : c)))}
             onDeleted={() => { setCollections((cs) => cs.filter((c) => c.id !== selected.id)); setSelectedId(null); }}
           />
@@ -106,7 +111,45 @@ export default function StudioCollectionsTab() {
   );
 }
 
-function CollectionEditor({ collection, onChange, onDeleted }) {
+/** Em quais categorias a coleção aparece (nenhuma marcada = todas). */
+function CategoryPicker({ collection, categories, onChange }) {
+  const [saving, setSaving] = useState(false);
+  const selected = new Set(collection.categoryIds);
+  const toggle = async (id) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    const categoryIds = [...next];
+    setSaving(true);
+    const { error } = await updateCollection(collection.id, { categoryIds });
+    setSaving(false);
+    if (!error) onChange({ ...collection, categoryIds });
+  };
+  return (
+    <div className="rounded-lg border border-border bg-bg p-3">
+      <p className="text-sm font-semibold">
+        Aparece nas categorias {saving && <span className="font-normal text-text-secondary">· salvando…</span>}
+      </p>
+      <p className="mb-2 text-xs text-text-secondary">
+        {selected.size === 0
+          ? 'Nenhuma marcada: aparece em todas as categorias (nos produtos que permitem coleções).'
+          : 'Só aparece nos produtos destas categorias.'}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {categories.map((c) => (
+          <label
+            key={c.id}
+            className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${selected.has(c.id) ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-panel'}`}
+          >
+            <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggle(c.id)} className="h-3.5 w-3.5" />
+            {c.name}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CollectionEditor({ collection, categories, onChange, onDeleted }) {
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(collection.name);
   const [uploading, setUploading] = useState(null);
@@ -202,6 +245,8 @@ function CollectionEditor({ collection, onChange, onDeleted }) {
           )}
         </div>
       </div>
+
+      <CategoryPicker collection={collection} categories={categories} onChange={onChange} />
 
       <input ref={fileInput} type="file" accept={ACCEPT} multiple hidden onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">

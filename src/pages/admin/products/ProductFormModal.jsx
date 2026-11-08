@@ -27,6 +27,8 @@ function emptyForm() {
     has_3d_viewer: false,
     model_3d_url: '',
     uses_device_models: false,
+    allow_image_upload: true,
+    allow_collections: true,
     colors: [],
     sizes: [],
     variants: [],
@@ -53,6 +55,8 @@ function formFromProduct(product) {
     has_3d_viewer: Boolean(product.has_3d_viewer),
     model_3d_url: product.model_3d_url || '',
     uses_device_models: Boolean(product.uses_device_models),
+    allow_image_upload: product.allow_image_upload !== false,
+    allow_collections: product.allow_collections !== false,
     colors: (product.colors || []).map((c) => ({
       name: c.name,
       hex: c.hex,
@@ -542,6 +546,33 @@ export default function ProductFormModal({
             <p className="mt-1 text-xs text-text-secondary">
               Inclina a BASE do texto/arte (skew) só na prévia, dando a ilusão de estar deitado sobre a superfície (ex: 14 no chaveiro). Não afeta a arte enviada pra produção.
             </p>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-border p-4">
+          <p className="mb-1 text-sm font-medium">Opções no passo Personalizar</p>
+          <p className="mb-3 text-xs text-text-secondary">
+            O cliente sempre pode adicionar texto. Desmarque o que não faz sentido para este produto (ex: caneta e chaveiro só com texto).
+          </p>
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.allow_image_upload}
+                onChange={(e) => updateField({ allow_image_upload: e.target.checked })}
+                className="h-4 w-4 rounded border-border"
+              />
+              Permitir enviar imagem (botão “+ Imagem”)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.allow_collections}
+                onChange={(e) => updateField({ allow_collections: e.target.checked })}
+                className="h-4 w-4 rounded border-border"
+              />
+              Permitir coleções (botão “Coleções”) — quais coleções aparecem é definido em Studio → Coleções, por categoria
+            </label>
           </div>
         </div>
 

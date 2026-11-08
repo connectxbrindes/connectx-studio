@@ -55,3 +55,7 @@ create policy "studio collections files insert" on storage.objects for insert
 drop policy if exists "studio collections files delete" on storage.objects;
 create policy "studio collections files delete" on storage.objects for delete
   using (bucket_id = 'studio-collections' and (is_master() or has_permission('studio')));
+
+-- Categorias onde a coleção aparece (vazio = todas).
+alter table public.studio_collections
+  add column if not exists category_ids uuid[] not null default '{}';
