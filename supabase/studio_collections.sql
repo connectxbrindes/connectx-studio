@@ -59,3 +59,8 @@ create policy "studio collections files delete" on storage.objects for delete
 -- Categorias onde a coleção aparece (vazio = todas).
 alter table public.studio_collections
   add column if not exists category_ids uuid[] not null default '{}';
+
+-- Link das peças de divulgação da coleção (ex: pasta no Drive). Aparece
+-- dentro da pasta da coleção no Studio.
+alter table public.studio_collections
+  add column if not exists promo_url text;

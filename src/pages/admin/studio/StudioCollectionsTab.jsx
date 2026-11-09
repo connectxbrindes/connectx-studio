@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Eye, EyeOff, ImagePlus, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { ExternalLink, Eye, EyeOff, ImagePlus, Pencil, Plus, Trash2, X } from 'lucide-react';
 import {
   addCollectionImage, createCollection, deleteCollection, deleteCollectionImage, fetchAdminCollections, updateCollection,
 } from '../../../lib/collectionsApi';
@@ -149,6 +149,52 @@ function CategoryPicker({ collection, categories, onChange }) {
   );
 }
 
+/** Link das peças de divulgação (ex: pasta no Google Drive). */
+function PromoLinkField({ collection, onChange }) {
+  const [url, setUrl] = useState(collection.promoUrl);
+  const [status, setStatus] = useState('');
+  const dirty = url.trim() !== collection.promoUrl;
+  const valid = !url.trim() || /^https?:\/\/\S+\.\S+/i.test(url.trim());
+
+  const save = async (e) => {
+    e.preventDefault();
+    if (!valid) return;
+    setStatus('Salvando…');
+    const { error } = await updateCollection(collection.id, { promoUrl: url });
+    if (error) { setStatus('Não foi possível salvar.'); return; }
+    onChange({ ...collection, promoUrl: url.trim() });
+    setStatus('Salvo');
+  };
+
+  return (
+    <form onSubmit={save} className="rounded-lg border border-border bg-bg p-3">
+      <p className="text-sm font-semibold">
+        Peças de divulgação {status && <span className="font-normal text-text-secondary">· {status}</span>}
+      </p>
+      <p className="mb-2 text-xs text-text-secondary">
+        Cole o link compartilhado (Google Drive, Canva, etc.). Aparece como botão dentro da pasta da coleção no Studio. Deixe vazio para não mostrar.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <input
+          type="url"
+          value={url}
+          onChange={(e) => { setUrl(e.target.value); setStatus(''); }}
+          placeholder="https://drive.google.com/…"
+          aria-label="Link das peças de divulgação"
+          className={`min-w-0 flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:border-text-primary ${valid ? 'border-border' : 'border-red-400'}`}
+        />
+        <Button type="submit" disabled={!dirty || !valid}>Salvar link</Button>
+        {collection.promoUrl && (
+          <a href={collection.promoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-md px-2 text-sm font-semibold text-accent hover:underline">
+            <ExternalLink className="h-4 w-4" />Abrir
+          </a>
+        )}
+      </div>
+      {!valid && <p className="mt-1 text-xs text-red-600">O link precisa começar com https://</p>}
+    </form>
+  );
+}
+
 function CollectionEditor({ collection, categories, onChange, onDeleted }) {
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(collection.name);
@@ -247,6 +293,7 @@ function CollectionEditor({ collection, categories, onChange, onDeleted }) {
       </div>
 
       <CategoryPicker collection={collection} categories={categories} onChange={onChange} />
+      <PromoLinkField collection={collection} onChange={onChange} />
 
       <input ref={fileInput} type="file" accept={ACCEPT} multiple hidden onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">

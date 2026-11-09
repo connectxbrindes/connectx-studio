@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, X } from 'lucide-react';
+import { ChevronLeft, ExternalLink, Megaphone, X } from 'lucide-react';
 
 const CHECKER = 'bg-[repeating-conic-gradient(#f3f3f3_0%_25%,#fff_0%_50%)] bg-[length:16px_16px]';
 
@@ -69,9 +69,31 @@ export default function CollectionsModal({ collections, onPick, onClose }) {
                     className="h-24 w-auto drop-shadow-sm transition-transform group-hover:-translate-y-0.5 group-hover:scale-105 motion-reduce:transform-none"
                   />
                   <span className="w-full break-words text-sm font-semibold leading-tight">{c.name}</span>
-                  <span className="-mt-1 text-xs text-text-secondary">{c.images.length} {c.images.length === 1 ? 'arte' : 'artes'}</span>
+                  <span className="-mt-1 text-xs text-text-secondary">
+                    {c.images.length} {c.images.length === 1 ? 'arte' : 'artes'}{c.promoUrl && ' · divulgação'}
+                  </span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {folder?.promoUrl && (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <Megaphone className="h-5 w-5 flex-shrink-0 text-accent" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">Peças de divulgação para redes sociais</p>
+                  <p className="text-xs text-text-secondary">Materiais prontos para divulgar a coleção {folder.name}.</p>
+                </div>
+              </div>
+              <a
+                href={folder.promoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+              >
+                Abrir divulgação <ExternalLink className="h-4 w-4" />
+              </a>
             </div>
           )}
 
