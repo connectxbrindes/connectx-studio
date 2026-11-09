@@ -5,12 +5,21 @@ import { fetchStudioCollections } from '../../lib/collectionsApi';
 
 // Troque o ID ao lançar uma nova novidade: todos os revendedores veem de novo.
 const NEWS_ID = 'colecoes-2026-11';
+// Último dia (inclusive) em que o pop-up aparece. Uma vez por dia até lá.
+const LAST_DAY = '2026-11-15';
 
-/** Pop-up de novidade para revendedores: aparece uma vez por unidade ao abrir o Studio. */
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/** Pop-up de novidade para revendedores: aparece uma vez por dia ao abrir o
+ * Studio, até LAST_DAY. */
 export default function NewsPopup({ resellerId }) {
   const key = `news-seen:${NEWS_ID}:${resellerId || 'unit'}`;
   const [open, setOpen] = useState(() => {
-    try { return !localStorage.getItem(key); } catch { return true; }
+    if (today() > LAST_DAY) return false;
+    try { return localStorage.getItem(key) !== today(); } catch { return true; }
   });
 
   // Links de divulgação cadastrados nas coleções (Painel → Studio → Coleções).
@@ -23,7 +32,7 @@ export default function NewsPopup({ resellerId }) {
   }, [open]);
 
   const close = () => {
-    try { localStorage.setItem(key, '1'); } catch { /* sem armazenamento: só fecha */ }
+    try { localStorage.setItem(key, today()); } catch { /* sem armazenamento: só fecha */ }
     setOpen(false);
   };
 
