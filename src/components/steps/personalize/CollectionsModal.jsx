@@ -25,7 +25,8 @@ export default function CollectionsModal({ collections, onPick, onClose }) {
   }, [onClose, openId]);
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    // z alto: o quadro de seleção do mockup (Moveable) usa z-index 3000.
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
       <button type="button" aria-label="Fechar coleções" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <div role="dialog" aria-modal="true" aria-label="Coleções" className="relative flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-panel shadow-2xl">
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
