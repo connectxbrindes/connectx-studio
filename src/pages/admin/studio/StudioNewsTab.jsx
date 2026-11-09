@@ -56,7 +56,7 @@ export default function StudioNewsTab() {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-text-secondary">
-        Pop-up que aparece para os <strong>revendedores</strong> ao entrar no Studio, <strong>uma vez por dia</strong>, entre a data de início e a data de fim.
+        Pop-up que aparece para os <strong>revendedores</strong> <strong>toda vez</strong> que abrem o Studio ou voltam para a tela de início, entre a data de início e a data de fim.
         Se duas novidades estiverem no ar ao mesmo tempo, aparece a de início mais recente.
       </p>
 

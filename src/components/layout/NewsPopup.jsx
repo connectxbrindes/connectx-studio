@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, Megaphone, X } from 'lucide-react';
 import { fetchStudioCollections } from '../../lib/collectionsApi';
-import { fetchCurrentNews, localDay } from '../../lib/newsApi';
+import { useLocation } from 'react-router-dom';
+import { fetchCurrentNews } from '../../lib/newsApi';
 
 /** Texto da novidade: quebras de linha mantidas e **assim** vira negrito. */
 function RichText({ text }) {
@@ -86,28 +87,21 @@ export function NewsModal({ news, onClose }) {
 }
 
 /** Pop-up de novidade para revendedores: mostra a novidade cadastrada no
- * Painel (Studio → Novidades) uma vez por dia, entre as datas de início e fim. */
-export default function NewsPopup({ resellerId }) {
+ * Painel (Studio → Novidades), entre as datas de início e fim, toda vez que o
+ * revendedor abre o site ou volta para a tela de início ("/"). */
+export default function NewsPopup() {
+  const location = useLocation();
   const [news, setNews] = useState(null);
 
+  // Cada chegada na tela de início (abrir o site, clicar no logo, voltar de
+  // outra página) gera uma nova location.key e mostra de novo.
   useEffect(() => {
+    if (location.pathname !== '/') return undefined;
     let alive = true;
-    fetchCurrentNews().then((n) => {
-      if (!alive || !n) return;
-      try {
-        if (localStorage.getItem(`news-seen:${n.id}:${resellerId || 'unit'}`) === localDay()) return;
-      } catch { /* sem armazenamento: mostra */ }
-      setNews(n);
-    });
+    fetchCurrentNews().then((n) => { if (alive && n) setNews(n); });
     return () => { alive = false; };
-  }, [resellerId]);
+  }, [location.key, location.pathname]);
 
   if (!news) return null;
-
-  const close = () => {
-    try { localStorage.setItem(`news-seen:${news.id}:${resellerId || 'unit'}`, localDay()); } catch { /* só fecha */ }
-    setNews(null);
-  };
-
-  return <NewsModal news={news} onClose={close} />;
+  return <NewsModal news={news} onClose={() => setNews(null)} />;
 }

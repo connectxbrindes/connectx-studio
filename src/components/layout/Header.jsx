@@ -131,7 +131,7 @@ export default function Header({ channel = 'studio' }) {
             </div>
           )}
           {!isStore && identity?.role === 'reseller' && <ArtsCenterButton unitName={identity.resellerName} />}
-          {!isStore && identity?.role === 'reseller' && <NewsPopup resellerId={identity.resellerId} />}
+          {!isStore && identity?.role === 'reseller' && <NewsPopup />}
           {!isStore && identity?.role === 'master' && <ArtsCenterButton side="team" />}
           <button
             type="button"
