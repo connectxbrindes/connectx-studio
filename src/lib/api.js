@@ -99,7 +99,8 @@ export async function fetchCatalog() {
       description: p.description || '',
       price: Number(p.base_price),
       minOrderQty: p.min_order_qty && p.min_order_qty > 0 ? p.min_order_qty : 1,
-      image: p.cover_image_url,
+      // Sem capa cadastrada: usa a foto da primeira cor que tiver imagem.
+      image: p.cover_image_url || sortedColors.find((c) => c.image_url)?.image_url || null,
       category: effectiveCategory,
       subcategory: p.subcategory ? { id: p.subcategory.id, name: p.subcategory.name, slug: p.subcategory.slug } : null,
       brand: p.brand || null,
