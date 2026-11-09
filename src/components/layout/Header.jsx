@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { storeSignOut } from '../../lib/storeApi';
 import ArtsCenterButton from '../arts/ArtsCenterButton';
+import NewsPopup from './NewsPopup';
 
 export default function Header({ channel = 'studio' }) {
   const isStore = channel === 'store';
@@ -130,6 +131,7 @@ export default function Header({ channel = 'studio' }) {
             </div>
           )}
           {!isStore && identity?.role === 'reseller' && <ArtsCenterButton unitName={identity.resellerName} />}
+          {!isStore && identity?.role === 'reseller' && <NewsPopup resellerId={identity.resellerId} />}
           {!isStore && identity?.role === 'master' && <ArtsCenterButton side="team" />}
           <button
             type="button"
