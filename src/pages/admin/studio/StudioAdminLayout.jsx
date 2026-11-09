@@ -4,6 +4,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 const TABS = [
   { to: '/admin/studio', label: 'Prévia / teste', end: true },
   { to: '/admin/studio/colecoes', label: 'Coleções' },
+  { to: '/admin/studio/novidades', label: 'Novidades' },
 ];
 
 export default function StudioAdminLayout() {

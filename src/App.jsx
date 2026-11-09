@@ -23,6 +23,7 @@ import Store from './pages/Store';
 import AdminArts from './pages/admin/AdminArts';
 import StudioAdminLayout from './pages/admin/studio/StudioAdminLayout';
 import StudioCollectionsTab from './pages/admin/studio/StudioCollectionsTab';
+import StudioNewsTab from './pages/admin/studio/StudioNewsTab';
 import StoreLayout from './pages/store/StoreLayout';
 import StoreHome from './pages/store/StoreHome';
 import StoreListing from './pages/store/StoreListing';
@@ -156,6 +157,7 @@ function App() {
         >
           <Route index element={<AdminStudio />} />
           <Route path="colecoes" element={<StudioCollectionsTab />} />
+          <Route path="novidades" element={<StudioNewsTab />} />
         </Route>
       </Route>
     </Routes>
