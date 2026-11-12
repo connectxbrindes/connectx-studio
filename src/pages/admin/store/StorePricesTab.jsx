@@ -14,6 +14,7 @@ export default function StorePricesTab() {
   const [products, setProducts] = useState(null);
   const [tiersByProduct, setTiersByProduct] = useState({});
   const [edits, setEdits] = useState({});
+  const [storeText, setStoreText] = useState({}); // texto digitado em "Preço na loja"
   const [openId, setOpenId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -33,7 +34,7 @@ export default function StorePricesTab() {
 
   const handleSavePrices = async () => {
     if (dirtyIds.some((id) => !(toNumber(edits[id]) > 0))) {
-      setMessage('Preço precisa ser maior que zero.');
+      setMessage(`Preço precisa ser maior que zero (na loja, maior que ${formatCurrency(PERSONALIZATION_FEE)}).`);
       return;
     }
     setSaving(true);
@@ -45,6 +46,7 @@ export default function StorePricesTab() {
     }
     setProducts((ps) => ps.map((p) => (edits[p.id] != null ? { ...p, base_price: toNumber(edits[p.id]) } : p)));
     setEdits({});
+    setStoreText({});
     setMessage('Preços salvos!');
   };
 
@@ -54,7 +56,8 @@ export default function StorePricesTab() {
         <h3 className="text-lg font-bold">Preços e descontos de atacado</h3>
         <p className="text-sm text-text-secondary">
           Preço de venda de cada produto (o mesmo “Preço Base” do cadastro). Na loja o cliente paga esse valor +{' '}
-          {formatCurrency(PERSONALIZATION_FEE)} da personalização. Em <strong>Descontos</strong> você define, para cada
+          {formatCurrency(PERSONALIZATION_FEE)} da personalização. Você pode digitar o preço do produto ou direto o preço
+          final na loja: um ajusta o outro. Em <strong>Descontos</strong> você define, para cada
           produto, a partir de quantas unidades ele fica mais barato. Aparece na página do produto como “10 unidades × R$ …”.
         </p>
       </div>
@@ -86,12 +89,33 @@ export default function StorePricesTab() {
                         min="0"
                         step="0.01"
                         value={value}
-                        onChange={(e) => { setEdits({ ...edits, [p.id]: e.target.value }); setMessage(''); }}
+                        onChange={(e) => {
+                          setEdits({ ...edits, [p.id]: e.target.value });
+                          setStoreText(({ [p.id]: _, ...rest }) => rest);
+                          setMessage('');
+                        }}
                         className={`${inputClass} ${edits[p.id] != null ? 'border-accent' : ''}`}
                         aria-label={`Preço de ${p.name}`}
                       />
                     </td>
-                    <td className="py-2 pr-3 font-semibold">{n > 0 ? formatCurrency(n + PERSONALIZATION_FEE) : '—'}</td>
+                    <td className="w-36 py-2 pr-3">
+                      {/* Preço final da loja: ao editar, o preço do produto vira (loja − personalização). */}
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={storeText[p.id] ?? (n > 0 ? (n + PERSONALIZATION_FEE).toFixed(2) : '')}
+                        onChange={(e) => {
+                          const text = e.target.value;
+                          const store = toNumber(text);
+                          setStoreText({ ...storeText, [p.id]: text });
+                          setEdits({ ...edits, [p.id]: store > PERSONALIZATION_FEE ? (store - PERSONALIZATION_FEE).toFixed(2) : '0' });
+                          setMessage('');
+                        }}
+                        className={`${inputClass} font-semibold ${storeText[p.id] != null ? 'border-accent' : ''}`}
+                        aria-label={`Preço na loja de ${p.name}`}
+                      />
+                    </td>
                     <td className="py-2 pr-3 text-text-secondary">{p.reseller_price != null ? formatCurrency(Number(p.reseller_price)) : '—'}</td>
                     <td className="py-2">
                       <button
