@@ -6,18 +6,18 @@ import { fetchPriceTiers } from '../../lib/storeApi';
 /** Seletor "compre em quantidade": mostra preço por unidade e total de cada
  * faixa de atacado do produto (Painel → Loja virtual → Preços e descontos).
  * Produto sem faixas cadastradas não mostra o seletor. */
-export default function QuantityTiers({ productId, unitPrice, onChange }) {
+export default function QuantityTiers({ productId, unitPrice, minQty = 1, onChange }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(1);
   const [priceTiers, setPriceTiers] = useState([]);
   const ref = useRef(null);
 
   useEffect(() => {
-    setSelected(1);
-    onChange?.(1);
+    setSelected(minQty);
+    onChange?.(minQty);
     setPriceTiers([]);
     if (productId) fetchPriceTiers(productId).then(setPriceTiers);
-  }, [productId]);
+  }, [productId, minQty]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -28,7 +28,8 @@ export default function QuantityTiers({ productId, unitPrice, onChange }) {
 
   if (priceTiers.length === 0) return null;
 
-  const tiers = [{ qty: 1, unit: unitPrice }, ...priceTiers.map((t) => ({ qty: t.minQty, unit: tierUnitPrice(t, unitPrice) }))].map((t) => ({
+  // Primeira opção = pedido mínimo da loja, no preço normal.
+  const tiers = [{ qty: minQty, unit: unitPrice }, ...priceTiers.filter((t) => t.minQty > minQty).map((t) => ({ qty: t.minQty, unit: tierUnitPrice(t, unitPrice) }))].map((t) => ({
     ...t,
     discount: unitPrice > 0 ? Math.max(1 - t.unit / unitPrice, 0) : 0,
     total: t.unit * t.qty,

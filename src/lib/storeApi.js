@@ -387,8 +387,8 @@ export async function savePriceTiers(productId, tiers) {
   return { error };
 }
 
-/** Atualiza o preço final da loja (store_price) de um produto. */
-export async function saveStorePrice(productId, storePrice) {
-  const { error } = await supabaseAdmin.from('products').update({ store_price: storePrice }).eq('id', productId);
+/** Atualiza preço final (store_price) e/ou pedido mínimo (store_min_qty) da loja. */
+export async function saveStoreProduct(productId, fields) {
+  const { error } = await supabaseAdmin.from('products').update(fields).eq('id', productId);
   return { error };
 }

@@ -14,7 +14,8 @@ import { products as mockProducts } from '../data/products';
  * structure expected by the Storefront.
  * Fallbacks to mock data if Supabase is not configured or fails.
  */
-export async function fetchCatalog() {
+/** `store: true` = catálogo da loja virtual (usa o pedido mínimo da loja). */
+export async function fetchCatalog({ store = false } = {}) {
   if (!isSupabaseConfigured) {
     console.warn('Supabase not configured. Using mock catalog data.');
     return mockProducts;
@@ -30,6 +31,7 @@ export async function fetchCatalog() {
         base_price,
         store_price,
         min_order_qty,
+        store_min_qty,
         description,
         cover_image_url,
         personalization_area,
@@ -101,7 +103,9 @@ export async function fetchCatalog() {
       price: Number(p.base_price),
       // Loja virtual: preço final por unidade (já com personalização).
       storePrice: p.store_price != null ? Number(p.store_price) : null,
-      minOrderQty: p.min_order_qty && p.min_order_qty > 0 ? p.min_order_qty : 1,
+      // Loja virtual tem pedido mínimo próprio; sem ele, vale o do cadastro.
+      minOrderQty: (store && p.store_min_qty > 0 ? p.store_min_qty : p.min_order_qty > 0 ? p.min_order_qty : 1),
+      isStoreCatalog: store,
       // Sem capa cadastrada: usa a foto da primeira cor que tiver imagem.
       image: p.cover_image_url || sortedColors.find((c) => c.image_url)?.image_url || null,
       category: effectiveCategory,
@@ -312,7 +316,7 @@ export async function fetchAdminProducts() {
   const { data, error } = await supabaseAdmin
     .from('products')
     .select(`
-      id, name, slug, base_price, store_price, reseller_price, min_order_qty, description, cover_image_url, personalization_area, status,
+      id, name, slug, base_price, store_price, store_min_qty, reseller_price, min_order_qty, description, cover_image_url, personalization_area, status,
       ship_weight_kg, ship_height_cm, ship_width_cm, ship_length_cm,
       category_id, subcategory_id, brand_id, has_3d_viewer, model_3d_url, uses_device_models,
       allow_image_upload, allow_collections,

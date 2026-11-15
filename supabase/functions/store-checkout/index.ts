@@ -65,6 +65,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   ENDERECO_INCOMPLETO: "Preencha o endereço completo para entrega.",
   ENTREGA_INVALIDA: "Forma de entrega inválida.",
   RETIRADA_INVALIDA: "Escolha a unidade onde vai retirar o pedido.",
+  PEDIDO_MINIMO: "Um produto do carrinho está abaixo do pedido mínimo. Aumente a quantidade.",
 };
 const friendly = (msg: string, fallback: string) => {
   const code = Object.keys(ERROR_MESSAGES).find((k) => msg.includes(k));

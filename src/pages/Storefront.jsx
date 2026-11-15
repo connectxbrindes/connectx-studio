@@ -53,7 +53,7 @@ export default function Storefront({ channel = 'studio', initialProductSlug = nu
   useEffect(() => {
     let mounted = true;
     async function loadData() {
-      const data = await fetchCatalog();
+      const data = await fetchCatalog({ store: isStore });
       if (!mounted) return;
       setCatalog(data);
       // Loja virtual: veio do botão "Personalizar" da vitrine — já entra no
@@ -72,7 +72,7 @@ export default function Storefront({ channel = 'studio', initialProductSlug = nu
     }
     loadData();
     return () => { mounted = false; };
-  }, [setCatalog, initialProductSlug, initialColorId, initialQuantity]);
+  }, [setCatalog, isStore, initialProductSlug, initialColorId, initialQuantity]);
 
   // Loja: o Passo 1 (escolher produto) é só dos revendedores. O cliente da loja
   // escolhe na vitrine — voltar para o Passo 1 leva à página do produto.

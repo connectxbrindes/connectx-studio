@@ -107,7 +107,7 @@ export default function StoreProduct() {
               </p>
             </div>
 
-            <QuantityTiers productId={product.id} unitPrice={storeUnitPrice(product)} onChange={setQuantity} />
+            <QuantityTiers productId={product.id} unitPrice={storeUnitPrice(product)} minQty={product.minOrderQty || 1} onChange={setQuantity} />
 
             {isGift && (
               <div className="rounded-2xl border border-accent/30 bg-[#fff4f0] p-4 text-sm">

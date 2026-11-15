@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import { fetchAdminProducts } from '../../../lib/api';
-import { fetchPriceTiers, savePriceTiers, saveStorePrice } from '../../../lib/storeApi';
+import { fetchPriceTiers, savePriceTiers, saveStoreProduct } from '../../../lib/storeApi';
 import { formatCurrency, PERSONALIZATION_FEE, tierUnitPrice } from '../../../utils/price';
 import Button from '../../../components/ui/Button';
 
@@ -21,6 +21,7 @@ export default function StorePricesTab() {
   const [products, setProducts] = useState(null);
   const [tiersByProduct, setTiersByProduct] = useState({});
   const [edits, setEdits] = useState({});
+  const [minEdits, setMinEdits] = useState({});
   const [openId, setOpenId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -36,23 +37,38 @@ export default function StorePricesTab() {
 
   if (!products) return null;
 
-  const dirtyIds = Object.keys(edits);
+  const dirtyIds = [...new Set([...Object.keys(edits), ...Object.keys(minEdits)])];
+
+  /** Campos alterados de um produto. Pedido mínimo vazio = 1 (sem mínimo). */
+  const changesFor = (id) => {
+    const fields = {};
+    if (edits[id] != null) fields.store_price = toNumber(edits[id]);
+    if (minEdits[id] != null) fields.store_min_qty = String(minEdits[id]).trim() === '' ? null : Math.round(toNumber(minEdits[id]));
+    return fields;
+  };
 
   const handleSavePrices = async () => {
-    if (dirtyIds.some((id) => !(toNumber(edits[id]) > 0))) {
+    const changes = dirtyIds.map((id) => [id, changesFor(id)]);
+    if (changes.some(([, f]) => 'store_price' in f && !(f.store_price > 0))) {
       setMessage('Preço precisa ser maior que zero.');
       return;
     }
+    if (changes.some(([, f]) => f.store_min_qty != null && !(f.store_min_qty >= 1))) {
+      setMessage('Pedido mínimo precisa ser 1 ou mais.');
+      return;
+    }
     setSaving(true);
-    const results = await Promise.all(dirtyIds.map((id) => saveStorePrice(id, toNumber(edits[id]))));
+    const results = await Promise.all(changes.map(([id, f]) => saveStoreProduct(id, f)));
     setSaving(false);
     if (results.some((r) => r.error)) {
       setMessage('Não foi possível salvar. Confira se seu usuário tem acesso a Produtos.');
       return;
     }
-    setProducts((ps) => ps.map((p) => (edits[p.id] != null ? { ...p, store_price: toNumber(edits[p.id]) } : p)));
+    const byId = Object.fromEntries(changes);
+    setProducts((ps) => ps.map((p) => (byId[p.id] ? { ...p, ...byId[p.id] } : p)));
     setEdits({});
-    setMessage('Preços salvos!');
+    setMinEdits({});
+    setMessage('Alterações salvas!');
   };
 
   return (
@@ -63,6 +79,7 @@ export default function StorePricesTab() {
           <strong>Preço na loja</strong> é o valor final que o cliente paga por unidade, já com a personalização.
           Em <strong>Descontos</strong> você define, para cada produto, o preço por unidade a partir de uma quantidade.
           Aparece na página do produto como “10 unidades × R$ …”.
+          <strong> Pedido mínimo</strong> vale só para a loja; em branco, usa o do cadastro do produto.
         </p>
       </div>
 
@@ -72,6 +89,7 @@ export default function StorePricesTab() {
             <tr className="border-b border-border text-xs text-text-secondary">
               <th className="py-2 pr-3 font-medium">Produto</th>
               <th className="py-2 pr-3 font-medium">Preço na loja (R$)</th>
+              <th className="py-2 pr-3 font-medium">Pedido mínimo (un.)</th>
               <th className="py-2 pr-3 font-medium">Revendedor</th>
               <th className="py-2 font-medium">Descontos de atacado</th>
             </tr>
@@ -98,6 +116,18 @@ export default function StorePricesTab() {
                         aria-label={`Preço na loja de ${p.name}`}
                       />
                     </td>
+                    <td className="w-28 py-2 pr-3">
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={minEdits[p.id] ?? (p.store_min_qty ?? '')}
+                        placeholder={String(p.min_order_qty > 0 ? p.min_order_qty : 1)}
+                        onChange={(e) => { setMinEdits({ ...minEdits, [p.id]: e.target.value }); setMessage(''); }}
+                        className={`${inputClass} ${minEdits[p.id] != null ? 'border-accent' : ''}`}
+                        aria-label={`Pedido mínimo na loja de ${p.name}`}
+                      />
+                    </td>
                     <td className="py-2 pr-3 text-text-secondary">{p.reseller_price != null ? formatCurrency(Number(p.reseller_price)) : '—'}</td>
                     <td className="py-2">
                       <button
@@ -113,7 +143,7 @@ export default function StorePricesTab() {
                   </tr>
                   {isOpen && (
                     <tr className="border-b border-border bg-bg">
-                      <td colSpan={4} className="px-3 pb-4 pt-1">
+                      <td colSpan={5} className="px-3 pb-4 pt-1">
                         <TierEditor
                           product={p}
                           unitPrice={n > 0 ? n : 0}
@@ -133,7 +163,7 @@ export default function StorePricesTab() {
       <div className="flex items-center justify-end gap-3">
         {message && <span className="text-sm text-text-secondary">{message}</span>}
         <Button type="button" onClick={handleSavePrices} disabled={saving || dirtyIds.length === 0}>
-          {saving ? 'Salvando…' : `Salvar preços${dirtyIds.length ? ` (${dirtyIds.length})` : ''}`}
+          {saving ? 'Salvando…' : `Salvar alterações${dirtyIds.length ? ` (${dirtyIds.length})` : ''}`}
         </Button>
       </div>
     </section>

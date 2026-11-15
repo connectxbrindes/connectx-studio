@@ -22,9 +22,11 @@ export function useStoreSession({ loadCatalog = false } = {}) {
   }, [setChannel, setCampaignProductIds, setStoreCustomer]);
 
   useEffect(() => {
-    if (!loadCatalog || useStore.getState().catalogLoaded) return;
+    // Recarrega se o catálogo em memória veio do Studio (pedido mínimo é outro).
+    const { catalogLoaded, catalog } = useStore.getState();
+    if (!loadCatalog || (catalogLoaded && catalog?.[0]?.isStoreCatalog)) return;
     let mounted = true;
-    fetchCatalog().then((data) => mounted && setCatalog(data));
+    fetchCatalog({ store: true }).then((data) => mounted && setCatalog(data));
     return () => {
       mounted = false;
     };
