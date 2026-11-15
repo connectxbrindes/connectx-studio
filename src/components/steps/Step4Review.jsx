@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { formatCurrency, computePersonalizationFee, computeLineTotal, nextTier, tierFor } from '../../utils/price';
+import { formatCurrency, computePersonalizationFee, computeLineTotal, nextTier, tierFor, tierUnitPrice } from '../../utils/price';
 import { fetchPriceTiers } from '../../lib/storeApi';
 import { useCanvasExport } from '../../hooks/useCanvasExport';
 import Button from '../ui/Button';
@@ -89,8 +89,11 @@ export default function Step4Review() {
     setViewMode('3d');
   };
 
-  const fee = computePersonalizationFee(elements);
-  const lineTotal = computeLineTotal({ unitPrice: product.price, quantity, elements });
+  // Loja com preço final do Painel: a personalização já está no preço.
+  const manualStorePrice = isStore && product.storePrice != null;
+  const unitPrice = manualStorePrice ? product.storePrice : product.price;
+  const fee = manualStorePrice ? 0 : computePersonalizationFee(elements);
+  const lineTotal = manualStorePrice ? unitPrice * quantity : computeLineTotal({ unitPrice, quantity, elements });
 
   // Loja: desconto de atacado do produto (o valor final é recalculado no servidor).
   useEffect(() => {
@@ -99,7 +102,8 @@ export default function Step4Review() {
   }, [isStore, product?.id]);
   const tier = tierFor(priceTiers, quantity);
   const upcoming = nextTier(priceTiers, quantity);
-  const wholesaleDiscount = tier ? Math.round(lineTotal * tier.discountPct) / 100 : 0;
+  const tierUnit = tier ? tierUnitPrice(tier, unitPrice + fee) : null;
+  const wholesaleDiscount = tier ? Math.round(Math.max(lineTotal - tierUnit * quantity, 0) * 100) / 100 : 0;
 
   /** Executa a adição ao carrinho de fato (sem verificação de duplicata). */
   const doAddToCart = async () => {
@@ -120,7 +124,7 @@ export default function Step4Review() {
       image: color?.image || product.image,
       thumbnail,
       artImage,
-      unitPrice: product.price,
+      unitPrice,
       color: color.name,
       colorId: color.id,
       size: size?.name,
@@ -280,7 +284,7 @@ export default function Step4Review() {
             <div className="space-y-2 border-t border-border pt-6 text-sm">
               <div className="flex justify-between text-text-secondary">
                 <span>Preço unitário</span>
-                <span>{formatCurrency(product.price)}</span>
+                <span>{formatCurrency(unitPrice)}</span>
               </div>
               {fee > 0 && (
                 <div className="flex justify-between text-text-secondary">
@@ -290,7 +294,7 @@ export default function Step4Review() {
               )}
               {wholesaleDiscount > 0 && (
                 <div className="flex justify-between font-medium text-green-600">
-                  <span>Atacado −{+tier.discountPct}% ({tier.minQty}+ unidades)</span>
+                  <span>Atacado {formatCurrency(tierUnit)} cada ({tier.minQty}+ unidades)</span>
                   <span>− {formatCurrency(wholesaleDiscount)}</span>
                 </div>
               )}
@@ -304,7 +308,7 @@ export default function Step4Review() {
                   onClick={() => setQuantity(upcoming.minQty)}
                   className="text-left text-xs font-semibold text-accent hover:underline"
                 >
-                  Leve {upcoming.minQty} unidades e pague {+upcoming.discountPct}% menos em cada
+                  Leve {upcoming.minQty} unidades e pague {formatCurrency(tierUnitPrice(upcoming, unitPrice + fee))} em cada
                 </button>
               )}
             </div>

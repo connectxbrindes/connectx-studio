@@ -134,7 +134,19 @@ export async function lookupCep(cep) {
 /** Finaliza a compra: sobe as artes, grava o pedido e (se houver valor a
  * pagar) recebe o link do Mercado Pago. Preço e frete são recalculados no
  * servidor. Retorno: { status: 'payment'|'free'|'manual', init_point?, order_numbers, total }. */
-export async function submitStoreOrder(cartItems, { token, customer, delivery, address, shippingServiceId }) {
+/** Unidades onde o cliente pode retirar o pedido (escolhidas no carrinho). */
+export async function fetchPickupLocations() {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabaseStore
+    .from('store_pickup_locations')
+    .select('id, name, address')
+    .eq('active', true)
+    .order('sort_order');
+  if (error) console.error('Error fetching pickup locations:', error);
+  return data || [];
+}
+
+export async function submitStoreOrder(cartItems, { token, customer, delivery, address, shippingServiceId, pickupLocation }) {
   const rows = await Promise.all(
     cartItems.map(async (item) => {
       const { previewUrl, zipUrl, artUrl } = await buildOrderAssets(item, supabaseStore);
@@ -161,6 +173,7 @@ export async function submitStoreOrder(cartItems, { token, customer, delivery, a
       delivery,
       address: delivery === 'shipping' ? address : null,
       shipping_service_id: shippingServiceId || null,
+      pickup_location: delivery === 'pickup' ? pickupLocation || null : null,
     },
   });
   if (error) return { error: 'Não foi possível enviar o pedido. Tente novamente.' };
@@ -350,26 +363,32 @@ export function fetchStorePublicInfo() {
  * Sem productId traz de todos (Painel). Leitura pública. */
 export async function fetchPriceTiers(productId) {
   if (!isSupabaseConfigured) return [];
-  let query = supabaseStore.from('store_price_tiers').select('product_id, min_qty, discount_pct').order('min_qty');
+  let query = supabaseStore.from('store_price_tiers').select('product_id, min_qty, discount_pct, unit_price').order('min_qty');
   if (productId) query = query.eq('product_id', productId);
   const { data, error } = await query;
   if (error) console.error('Error fetching price tiers:', error);
-  return (data || []).map((t) => ({ productId: t.product_id, minQty: t.min_qty, discountPct: Number(t.discount_pct) }));
+  return (data || []).map((t) => ({
+    productId: t.product_id,
+    minQty: t.min_qty,
+    unitPrice: t.unit_price != null ? Number(t.unit_price) : null,
+    discountPct: t.discount_pct != null ? Number(t.discount_pct) : null,
+  }));
 }
 
-/** Substitui as faixas de um produto pelas informadas no Painel. */
+/** Substitui as faixas de um produto pelas informadas no Painel
+ * ("a partir de X unidades, R$ Y cada"). */
 export async function savePriceTiers(productId, tiers) {
   const { error: delError } = await supabaseAdmin.from('store_price_tiers').delete().eq('product_id', productId);
   if (delError) return { error: delError };
   if (tiers.length === 0) return { error: null };
   const { error } = await supabaseAdmin
     .from('store_price_tiers')
-    .insert(tiers.map((t) => ({ product_id: productId, min_qty: t.minQty, discount_pct: t.discountPct })));
+    .insert(tiers.map((t) => ({ product_id: productId, min_qty: t.minQty, unit_price: t.unitPrice })));
   return { error };
 }
 
-/** Atualiza o preço de venda (base_price) de um produto. */
-export async function saveProductPrice(productId, basePrice) {
-  const { error } = await supabaseAdmin.from('products').update({ base_price: basePrice }).eq('id', productId);
+/** Atualiza o preço final da loja (store_price) de um produto. */
+export async function saveStorePrice(productId, storePrice) {
+  const { error } = await supabaseAdmin.from('products').update({ store_price: storePrice }).eq('id', productId);
   return { error };
 }

@@ -13,11 +13,18 @@ export function computeLineTotal({ unitPrice, quantity, elements }) {
   return (unitPrice + fee) * quantity;
 }
 
-/** Preço que o cliente da loja paga por unidade: produto + personalização. */
-export const storeUnitPrice = (product) => (product?.price || 0) + PERSONALIZATION_FEE;
+/** Preço que o cliente da loja paga por unidade: o preço final do Painel
+ * (Loja virtual → Preços e descontos), já com a personalização. Sem ele,
+ * regra antiga: produto + personalização. */
+export const storeUnitPrice = (product) =>
+  product?.storePrice != null ? product.storePrice : (product?.price || 0) + PERSONALIZATION_FEE;
+
+/** Preço por unidade numa faixa de atacado (R$ da faixa; faixas antigas em %). */
+export const tierUnitPrice = (tier, unitPrice) =>
+  tier.unitPrice != null ? tier.unitPrice : unitPrice * (1 - (tier.discountPct || 0) / 100);
 
 /** Faixa de atacado que vale para a quantidade (a maior faixa alcançada), ou null.
- * tiers = [{ minQty, discountPct }] do produto. Mesma regra do banco (place_store_order). */
+ * tiers = [{ minQty, unitPrice }] do produto. Mesma regra do banco (place_store_order). */
 export function tierFor(tiers, quantity) {
   return (tiers || [])
     .filter((t) => t.minQty <= quantity)

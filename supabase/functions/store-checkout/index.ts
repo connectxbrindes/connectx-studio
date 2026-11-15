@@ -64,6 +64,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   PRODUTO_INDISPONIVEL: "Um dos produtos do carrinho não está mais disponível.",
   ENDERECO_INCOMPLETO: "Preencha o endereço completo para entrega.",
   ENTREGA_INVALIDA: "Forma de entrega inválida.",
+  RETIRADA_INVALIDA: "Escolha a unidade onde vai retirar o pedido.",
 };
 const friendly = (msg: string, fallback: string) => {
   const code = Object.keys(ERROR_MESSAGES).find((k) => msg.includes(k));
@@ -142,7 +143,10 @@ async function handleCheckout(req: Request, body: any) {
     p_token: body.token || null,
     p_customer: body.customer ?? {},
     p_delivery: delivery,
-    p_address: delivery === "shipping" ? body.address : null,
+    // Retirada: leva a unidade escolhida (p_address.pickup_location).
+    p_address: delivery === "shipping"
+      ? body.address
+      : (body.pickup_location ? { pickup_location: String(body.pickup_location) } : null),
   });
   if (rpcError) {
     console.error("place_store_order", rpcError);

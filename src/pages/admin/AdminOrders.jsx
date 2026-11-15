@@ -125,6 +125,7 @@ export default function AdminOrders() {
       Cliente: o.customer_name || '',
       Vendedor: o.seller_name || '',
       Unidade: o.reseller?.short_name || o.reseller?.contact_name || o.reseller_name || '',
+      Retirada: o.pickup_location || '',
       Observação: o.customer_note || '',
       'Motivo Cancelamento': o.cancel_reason || '',
       Total: Number(o.line_total || 0),
@@ -247,6 +248,12 @@ export default function AdminOrders() {
       render: (o) => (
         <span className="font-medium text-text-primary" title={o.reseller?.name || o.reseller_name || ''}>
           {o.reseller?.short_name || o.reseller?.contact_name || o.reseller_name || '—'}
+          {/* Loja virtual: unidade escolhida pelo cliente para retirar. */}
+          {o.pickup_location && (
+            <span className="mt-1 block w-max rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+              Retirada: {o.pickup_location}
+            </span>
+          )}
         </span>
       ),
     },
@@ -542,7 +549,10 @@ export default function AdminOrders() {
                         <td className="px-3 py-2 text-text-secondary">{STATUS_LABELS[o.status] || o.status}</td>
                         <td className="px-3 py-2 text-text-secondary">{o.customer_name || '—'}</td>
                         <td className="px-3 py-2 text-text-secondary">{o.seller_name || '—'}</td>
-                        <td className="px-3 py-2 text-text-secondary">{o.reseller_name || '—'}</td>
+                        <td className="px-3 py-2 text-text-secondary">
+                          {o.reseller_name || '—'}
+                          {o.pickup_location && <span className="block text-xs text-blue-700">Retirada: {o.pickup_location}</span>}
+                        </td>
                         <td className="max-w-[220px] px-3 py-2 text-text-secondary">{o.customer_note || '—'}</td>
                         <td className="max-w-[220px] px-3 py-2 text-text-secondary">{o.cancel_reason || '—'}</td>
                         <td className="whitespace-nowrap px-3 py-2 text-right">{formatCurrency(Number(o.line_total || 0))}</td>

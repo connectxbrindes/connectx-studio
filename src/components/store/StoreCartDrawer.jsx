@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Gift } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { formatCurrency, nextTier, tierFor } from '../../utils/price';
-import { checkCampaignToken, fetchPriceTiers, fetchStoreConfig, lookupCep, quoteShipping, submitStoreOrder } from '../../lib/storeApi';
+import { formatCurrency, nextTier, tierFor, tierUnitPrice } from '../../utils/price';
+import { checkCampaignToken, fetchPickupLocations, fetchPriceTiers, fetchStoreConfig, lookupCep, quoteShipping, submitStoreOrder } from '../../lib/storeApi';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import UpsellPopup from './UpsellPopup';
@@ -25,16 +25,19 @@ function computeTotals(items, token, tiersByProduct) {
   let extraDiscount = 0;
   const lines = items.map((it, i) => {
     const gross = it.lineTotal;
+    const unit = gross / Math.max(it.quantity, 1);
     const tier = tierFor(tiersByProduct[it.productId], it.quantity);
-    const wholesale = tier ? round2(gross * tier.discountPct / 100) : 0;
+    const tierUnit = tier ? tierUnitPrice(tier, unit) : null;
+    const wholesale = tier ? round2(Math.max(gross - tierUnit * it.quantity, 0)) : 0;
     const net = gross - wholesale;
+    const next = nextTier(tiersByProduct[it.productId], it.quantity);
     subtotal += gross;
     wholesaleDiscount += wholesale;
     if (giftIndex !== -1) {
       if (i === giftIndex) giftDiscount += round2(net / Math.max(it.quantity, 1));
       else extraDiscount += round2(net * EXTRA_DISCOUNT);
     }
-    return { tier, wholesale, net, next: nextTier(tiersByProduct[it.productId], it.quantity) };
+    return { tier, tierUnit, wholesale, net, next, nextUnit: next ? tierUnitPrice(next, unit) : null };
   });
   return {
     giftIndex, lines, subtotal, wholesaleDiscount, giftDiscount, extraDiscount,
@@ -78,6 +81,8 @@ export default function StoreCartDrawer() {
   const [checkingToken, setCheckingToken] = useState(false);
 
   const [delivery, setDelivery] = useState('pickup');
+  const [pickupLocations, setPickupLocations] = useState([]);
+  const [pickupLocation, setPickupLocation] = useState('');
   const [address, setAddress] = useState(EMPTY_ADDRESS);
   const [quote, setQuote] = useState(null); // { options } | null
   const [quoteError, setQuoteError] = useState('');
@@ -94,6 +99,7 @@ export default function StoreCartDrawer() {
 
   useEffect(() => {
     fetchStoreConfig().then(setConfig);
+    fetchPickupLocations().then(setPickupLocations);
   }, []);
 
   // Faixas de atacado: recarrega ao abrir o carrinho (o Painel pode ter mudado).
@@ -195,6 +201,10 @@ export default function StoreCartDrawer() {
       setError('Informe um celular com DDD para contato.');
       return;
     }
+    if (delivery === 'pickup' && pickupLocations.length > 0 && !pickupLocation) {
+      setError('Escolha a unidade onde você vai retirar o pedido.');
+      return;
+    }
     if (delivery === 'shipping') {
       if (!selectedService) {
         setError('Calcule o frete pelo CEP e escolha PAC ou SEDEX.');
@@ -213,6 +223,7 @@ export default function StoreCartDrawer() {
       delivery,
       address: { ...address, cep: address.cep.replace(/\D/g, '') },
       shippingServiceId: selectedService?.id,
+      pickupLocation,
     });
     if (submitError) {
       setIsSubmitting(false);
@@ -350,9 +361,9 @@ export default function StoreCartDrawer() {
                           {formatCurrency(line ? line.net : item.lineTotal)}
                         </p>
                       </div>
-                      {line?.tier && (
+                      {line?.tier && line.wholesale > 0 && (
                         <p className="text-xs font-semibold text-green-600">
-                          Preço de atacado: −{+line.tier.discountPct}% ({line.tier.minQty}+ unidades)
+                          Preço de atacado: {formatCurrency(line.tierUnit)} cada ({line.tier.minQty}+ unidades)
                         </p>
                       )}
                       {line?.next && (
@@ -361,7 +372,7 @@ export default function StoreCartDrawer() {
                           onClick={() => updateQuantity(item.id, line.next.minQty)}
                           className="self-start text-left text-xs font-semibold text-accent hover:underline"
                         >
-                          Leve {line.next.minQty} unidades e pague {+line.next.discountPct}% menos em cada
+                          Leve {line.next.minQty} unidades e pague {formatCurrency(line.nextUnit)} em cada
                         </button>
                       )}
                     </div>
@@ -412,10 +423,33 @@ export default function StoreCartDrawer() {
                   <input type="radio" name="delivery" className="mt-1" checked={delivery === 'pickup'} onChange={() => setDelivery('pickup')} />
                   <span className="flex-1">
                     Retirar na loja
-                    {config.pickupAddress && <span className="block text-xs text-text-secondary">{config.pickupAddress}</span>}
+                    {pickupLocations.length === 0 && config.pickupAddress && <span className="block text-xs text-text-secondary">{config.pickupAddress}</span>}
                   </span>
                   <span className="font-semibold text-green-600">Grátis</span>
                 </label>
+                {delivery === 'pickup' && pickupLocations.length > 0 && (
+                  <fieldset className="flex flex-col gap-1.5 pl-1">
+                    <legend className="mb-1 text-xs font-semibold text-text-secondary">Escolha onde vai retirar:</legend>
+                    {pickupLocations.map((loc) => (
+                      <label
+                        key={loc.id}
+                        className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 ${pickupLocation === loc.id ? 'border-accent bg-accent/5' : 'border-border'}`}
+                      >
+                        <input
+                          type="radio"
+                          name="pickup-location"
+                          className="mt-1"
+                          checked={pickupLocation === loc.id}
+                          onChange={() => { setPickupLocation(loc.id); setError(''); }}
+                        />
+                        <span>
+                          <span className="block font-semibold">{loc.name}</span>
+                          <span className="block text-xs text-text-secondary">{loc.address}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </fieldset>
+                )}
                 {SHOW_CORREIOS_DELIVERY && (
                   <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 ${delivery === 'shipping' ? 'border-text-primary' : 'border-border'}`}>
                     <input type="radio" name="delivery" checked={delivery === 'shipping'} onChange={() => setDelivery('shipping')} />
@@ -519,7 +553,7 @@ export default function StoreCartDrawer() {
               )}
               <div className="flex justify-between">
                 <dt className="text-text-secondary">
-                  {delivery === 'shipping' ? `Frete${selectedService ? ` (${selectedService.name})` : ''}` : 'Retirada na loja'}
+                  {delivery === 'shipping' ? `Frete${selectedService ? ` (${selectedService.name})` : ''}` : `Retirada${pickupLocations.find((l) => l.id === pickupLocation) ? ` — ${pickupLocations.find((l) => l.id === pickupLocation).name}` : ' na loja'}`}
                 </dt>
                 <dd className={shippingPrice > 0 ? '' : 'text-green-600'}>
                   {delivery === 'shipping' && !selectedService ? 'calcule pelo CEP' : shippingPrice > 0 ? formatCurrency(shippingPrice) : 'Grátis'}

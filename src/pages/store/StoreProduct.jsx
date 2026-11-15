@@ -101,7 +101,9 @@ export default function StoreProduct() {
             <div>
               <p className="text-3xl font-extrabold text-brand-dark">{formatCurrency(storeUnitPrice(product))}</p>
               <p className="text-sm text-text-secondary">
-                Produto {formatCurrency(product.price)} + personalização {formatCurrency(PERSONALIZATION_FEE)} (foto, nome ou frase)
+                {product.storePrice != null
+                  ? 'Personalização inclusa (foto, nome ou frase)'
+                  : <>Produto {formatCurrency(product.price)} + personalização {formatCurrency(PERSONALIZATION_FEE)} (foto, nome ou frase)</>}
               </p>
             </div>
 

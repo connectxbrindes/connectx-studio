@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
-import { formatCurrency } from '../../utils/price';
+import { formatCurrency, tierUnitPrice } from '../../utils/price';
 import { fetchPriceTiers } from '../../lib/storeApi';
 
 /** Seletor "compre em quantidade": mostra preço por unidade e total de cada
@@ -28,10 +28,12 @@ export default function QuantityTiers({ productId, unitPrice, onChange }) {
 
   if (priceTiers.length === 0) return null;
 
-  const tiers = [{ qty: 1, discount: 0 }, ...priceTiers.map((t) => ({ qty: t.minQty, discount: t.discountPct / 100 }))].map((t) => {
-    const unit = unitPrice * (1 - t.discount);
-    return { ...t, unit, total: unit * t.qty, saved: (unitPrice - unit) * t.qty };
-  });
+  const tiers = [{ qty: 1, unit: unitPrice }, ...priceTiers.map((t) => ({ qty: t.minQty, unit: tierUnitPrice(t, unitPrice) }))].map((t) => ({
+    ...t,
+    discount: unitPrice > 0 ? Math.max(1 - t.unit / unitPrice, 0) : 0,
+    total: t.unit * t.qty,
+    saved: Math.max(unitPrice - t.unit, 0) * t.qty,
+  }));
   const current = tiers.find((t) => t.qty === selected);
   const label = (t) => `${t.qty} ${t.qty === 1 ? 'unidade' : 'unidades'} × ${formatCurrency(t.unit)}`;
 
@@ -63,7 +65,7 @@ export default function QuantityTiers({ productId, unitPrice, onChange }) {
                   <span className="block text-sm font-bold text-brand-dark">{label(t)}</span>
                   <span className="mt-1 block text-sm text-text-secondary">
                     {t.discount > 0
-                      ? <>Economia: <span className="font-semibold text-green-600">{formatCurrency(t.saved)}</span> ({+(t.discount * 100).toFixed(2)}% off) | Total: {formatCurrency(t.total)}</>
+                      ? <>Economia: <span className="font-semibold text-green-600">{formatCurrency(t.saved)}</span> ({+(t.discount * 100).toFixed(1)}% off) | Total: {formatCurrency(t.total)}</>
                       : <>Preço normal | Total: {formatCurrency(t.total)}</>}
                   </span>
                 </span>

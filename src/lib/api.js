@@ -28,6 +28,7 @@ export async function fetchCatalog() {
         name,
         slug,
         base_price,
+        store_price,
         min_order_qty,
         description,
         cover_image_url,
@@ -98,6 +99,8 @@ export async function fetchCatalog() {
       slug: p.slug,
       description: p.description || '',
       price: Number(p.base_price),
+      // Loja virtual: preço final por unidade (já com personalização).
+      storePrice: p.store_price != null ? Number(p.store_price) : null,
       minOrderQty: p.min_order_qty && p.min_order_qty > 0 ? p.min_order_qty : 1,
       // Sem capa cadastrada: usa a foto da primeira cor que tiver imagem.
       image: p.cover_image_url || sortedColors.find((c) => c.image_url)?.image_url || null,
@@ -309,7 +312,7 @@ export async function fetchAdminProducts() {
   const { data, error } = await supabaseAdmin
     .from('products')
     .select(`
-      id, name, slug, base_price, reseller_price, min_order_qty, description, cover_image_url, personalization_area, status,
+      id, name, slug, base_price, store_price, reseller_price, min_order_qty, description, cover_image_url, personalization_area, status,
       ship_weight_kg, ship_height_cm, ship_width_cm, ship_length_cm,
       category_id, subcategory_id, brand_id, has_3d_viewer, model_3d_url, uses_device_models,
       allow_image_upload, allow_collections,
@@ -722,7 +725,7 @@ export async function fetchOrders() {
       id, order_number, sequence_number, customer_name, customer_contact, customer_note, seller_name, quantity,
       personalization_fee, unit_price, line_total, status, cancel_reason, created_at, status_changed_at,
       preview_image_url, original_files_zip_url, art_image_url,
-      reseller_id, reseller_name,
+      reseller_id, reseller_name, pickup_location,
       reseller:resellers ( name, short_name, contact_name ),
       product:products ( name ),
       color:product_colors ( name ),
@@ -778,7 +781,7 @@ export async function fetchProductionReport(fromISO, toISO, status = 'completed'
     .from('orders')
     .select(`
       sequence_number, order_number, created_at, status_changed_at, quantity, line_total, status, cancel_reason,
-      customer_name, customer_note, seller_name, reseller_name,
+      customer_name, customer_note, seller_name, reseller_name, pickup_location,
       product:products ( name, category:categories ( id, name ), subcategory:subcategories ( category:categories ( id, name ) ) ),
       color:product_colors ( name ), size:product_sizes ( name ), model:brand_models ( name )
     `)
