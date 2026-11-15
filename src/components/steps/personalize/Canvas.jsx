@@ -165,7 +165,7 @@ export default function Canvas() {
         className={`pointer-events-none absolute inset-0 overflow-hidden rounded-2xl shadow-sm transition-colors duration-500 isolate ${
           hasModelMockup ? 'bg-white' : backgroundImage ? 'bg-panel' : ''
         }`}
-        style={hasModelMockup || backgroundImage ? undefined : { backgroundColor: color.hex }}
+        style={hasModelMockup || backgroundImage ? undefined : { backgroundColor: color?.hex || "#f3f4f6" }}
       >
         <img
           src={backgroundImage}

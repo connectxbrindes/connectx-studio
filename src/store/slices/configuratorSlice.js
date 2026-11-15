@@ -43,7 +43,7 @@ export const createConfiguratorSlice = (set) => ({
       catalog: products,
       catalogLoaded: true,
       selectedProduct: defaultProduct,
-      selectedColor: defaultProduct ? defaultProduct.options.colors[0] : null,
+      selectedColor: defaultProduct?.options.colors[0] ?? null,
       selectedSize: defaultProduct?.options.sizes ? defaultProduct.options.sizes[0] : null,
       ...deriveModelSelection(defaultProduct),
       quantity: defaultProduct?.minOrderQty || 1,
@@ -57,7 +57,7 @@ export const createConfiguratorSlice = (set) => ({
     if (!product) return {};
     return {
       selectedProduct: product,
-      selectedColor: product.options.colors[0],
+      selectedColor: product.options.colors[0] ?? null,
       selectedSize: product.options.sizes ? product.options.sizes[0] : null,
       ...deriveModelSelection(product),
       quantity: product.minOrderQty || 1,
@@ -82,7 +82,7 @@ export const createConfiguratorSlice = (set) => ({
     const product = state.catalog.length > 0 ? state.catalog[0] : null;
     return {
       selectedProduct: product,
-      selectedColor: product ? product.options.colors[0] : null,
+      selectedColor: product?.options.colors[0] ?? null,
       selectedSize: product?.options.sizes ? product.options.sizes[0] : null,
       ...deriveModelSelection(product),
       quantity: product?.minOrderQty || 1,

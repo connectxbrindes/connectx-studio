@@ -28,7 +28,7 @@ const ProductPreview = forwardRef(function ProductPreview(
           ? `mx-auto aspect-[331/590] ${bare ? 'h-full' : `${heightClass} overflow-hidden rounded-xl`}`
           : `w-full ${bare ? 'h-full' : `${heightClass} overflow-hidden rounded-xl`}`
       } ${artOnly ? '' : hasModelMockup ? 'bg-white' : backgroundImage ? 'bg-panel' : ''} ${className}`}
-      style={artOnly || hasModelMockup || backgroundImage ? undefined : { backgroundColor: color.hex }}
+      style={artOnly || hasModelMockup || backgroundImage ? undefined : { backgroundColor: color?.hex || "#f3f4f6" }}
     >
       {!artOnly && (
         <img

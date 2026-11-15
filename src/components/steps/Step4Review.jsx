@@ -125,8 +125,8 @@ export default function Step4Review() {
       thumbnail,
       artImage,
       unitPrice,
-      color: color.name,
-      colorId: color.id,
+      color: color?.name || null,
+      colorId: color?.id || null,
       size: size?.name,
       sizeId: size?.id,
       model: model?.name,
@@ -146,7 +146,7 @@ export default function Step4Review() {
   const handleAddToCart = async () => {
     const duplicate = findDuplicateInCart(cartItems, {
       productId: product.id,
-      colorId: color.id,
+      colorId: color?.id || null,
       sizeId: size?.id,
       modelId: model?.id,
       elements,
@@ -227,7 +227,7 @@ export default function Step4Review() {
           <div className="border-b border-border pb-6">
             <h1 className="text-3xl font-bold">{product.name}</h1>
             <p className="mt-2 text-text-secondary">
-              {[color.name, size?.name, model?.name].filter(Boolean).join(' · ')}
+              {[color?.name, size?.name, model?.name].filter(Boolean).join(' · ')}
             </p>
             <button
               type="button"

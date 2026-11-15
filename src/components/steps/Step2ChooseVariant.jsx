@@ -181,9 +181,11 @@ export default function Step2ChooseVariant() {
           </>
         )}
 
+        {/* Produto sem cor cadastrada: não mostra o seletor de cor. */}
+        {product.options.colors.length > 0 && (
         <div>
           <h3 className="mb-4 flex items-center text-sm font-semibold uppercase tracking-wide text-text-secondary">
-            Cor <span className="ml-2 font-medium normal-case text-text-primary">{selectedColor.name}</span>
+            Cor <span className="ml-2 font-medium normal-case text-text-primary">{selectedColor?.name}</span>
             {selectedColor?.stockQuantity > 0 && (
               <span className="ml-3 inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 normal-case">
                 {selectedColor.stockQuantity} em estoque
@@ -199,12 +201,12 @@ export default function Step2ChooseVariant() {
                   type="button"
                   aria-label={out ? `${color.name} (esgotado)` : color.name}
                   title={out ? `${color.name} — esgotado` : color.stockQuantity != null ? `${color.name} — ${color.stockQuantity} un` : color.name}
-                  aria-pressed={selectedColor.id === color.id}
+                  aria-pressed={selectedColor?.id === color.id}
                   onClick={() => selectColor(color)}
                   style={{ backgroundColor: color.hex }}
                   className={`h-12 w-12 rounded-full shadow transition-transform duration-200 hover:scale-110 ${
                     out ? 'opacity-40' : ''
-                  } ${selectedColor.id === color.id ? 'ring-2 ring-text-primary ring-offset-2' : ''}`}
+                  } ${selectedColor?.id === color.id ? 'ring-2 ring-text-primary ring-offset-2' : ''}`}
                 />
               );
             })}
@@ -213,6 +215,7 @@ export default function Step2ChooseVariant() {
             <p className="mt-2 text-sm text-accent">Esta cor não está disponível em estoque.</p>
           )}
         </div>
+        )}
 
         {product.options.sizes && (
           <div>
