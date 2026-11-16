@@ -9,6 +9,7 @@ import StoreCartDrawer from '../../components/store/StoreCartDrawer';
 import StoreAuthModal from '../../components/store/StoreAuthModal';
 import PaymentReturnModal from '../../components/store/PaymentReturnModal';
 import Toast from '../../components/ui/Toast';
+import SocialLinks from '../../components/store/SocialLinks';
 import SupabaseNotConfigured from '../admin/SupabaseNotConfigured';
 
 function SearchBox({ className = '', autoFocus = false }) {
@@ -135,6 +136,8 @@ function StoreFooter({ categories, info, withBottomBar }) {
         <div>
           <img src="/logo-connectx.webp" alt="ConnectX Brindes" className="mb-4 h-10 w-auto brightness-0 invert" />
           <p className="text-sm leading-relaxed text-white/70">Produtos personalizados com a sua cara: você cria no nosso Studio e a gente produz.</p>
+          <p className="mb-2 mt-5 text-sm font-bold uppercase tracking-wider">Siga a gente</p>
+          <SocialLinks />
         </div>
         <div>
           <p className="mb-3 text-sm font-bold uppercase tracking-wider">Categorias</p>

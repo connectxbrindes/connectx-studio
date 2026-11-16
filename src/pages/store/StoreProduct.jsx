@@ -23,7 +23,16 @@ export default function StoreProduct() {
 
   useEffect(() => {
     setColorId(null);
-    if (product) document.title = `${product.name.trim()} personalizado — ConnectX Brindes`;
+    if (!product) return;
+    document.title = `${product.name.trim()} personalizado — ConnectX Brindes`;
+    // Descrição que o Google mostra no resultado de busca.
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) {
+      const text = (product.description || '').replace(/\s+/g, ' ').trim();
+      meta.setAttribute('content', text
+        ? text.slice(0, 160)
+        : `${product.name.trim()} personalizado com a sua arte. Crie online na ConnectX Brindes e retire na loja.`);
+    }
   }, [product]);
 
   if (!catalogLoaded) {
