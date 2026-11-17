@@ -4,6 +4,7 @@ Disallow: /admin
 Disallow: /login
 Disallow: /meus-pedidos
 Disallow: /tabela-de-precos
+Disallow: /meus-codigos
 Disallow: /store/personalizar
 
 Sitemap: https://www.connectxbrindes.com.br/sitemap.xml

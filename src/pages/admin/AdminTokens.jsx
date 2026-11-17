@@ -10,6 +10,7 @@ import {
 } from '../../lib/storeApi';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
+import TokenDistribution from './tokens/TokenDistribution';
 
 const STATUS_LABELS = { active: 'Disponível', used: 'Usado', inactive: 'Desativado' };
 const STATUS_STYLES = {
@@ -47,6 +48,7 @@ export default function AdminTokens() {
   const [formError, setFormError] = useState('');
   const [generating, setGenerating] = useState(false);
   const [busyBatchId, setBusyBatchId] = useState(null);
+  const [distributeBatch, setDistributeBatch] = useState(null);
 
   const [search, setSearch] = useState('');
   const [searchResult, setSearchResult] = useState(undefined); // undefined = não buscou; null = não achou
@@ -109,10 +111,14 @@ export default function AdminTokens() {
       window.alert('Não foi possível baixar os códigos.');
       return;
     }
-    const slug = batch.name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
+    downloadTokensCsv(tokens, batch.name);
+  };
+
+  const downloadTokensCsv = (tokens, name) => {
+    const slug = name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
     downloadCsv(`tokens-${slug}.csv`, [
-      ['Código', 'Situação', 'Usado em', 'Pedido'],
-      ...tokens.map((t) => [t.code, STATUS_LABELS[t.status] || t.status, formatDateTime(t.used_at), t.used_order_number || '']),
+      ['Código', 'Revendedor', 'Situação', 'Usado em', 'Pedido'],
+      ...tokens.map((t) => [t.code, t.reseller?.name || '', STATUS_LABELS[t.status] || t.status, formatDateTime(t.used_at), t.used_order_number || '']),
     ]);
   };
 
@@ -163,6 +169,7 @@ export default function AdminTokens() {
               {STATUS_LABELS[searchResult.status]}
             </span>
             <span className="text-text-secondary">Lote: {searchResult.batch?.name}{searchResult.batch && !searchResult.batch.active ? ' (lote desativado)' : ''}</span>
+            <span className="text-text-secondary">Revendedor: {searchResult.reseller?.name || 'nenhum'}</span>
             {searchResult.status === 'used' && (
               <span className="text-text-secondary">
                 Usado em {formatDateTime(searchResult.used_at)} · Pedido {searchResult.used_order_number}
@@ -214,6 +221,9 @@ export default function AdminTokens() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button type="button" onClick={() => setDistributeBatch(b)} className="mr-4 font-semibold text-text-primary hover:text-accent">
+                      Revendedores
+                    </button>
                     <button type="button" disabled={busyBatchId === b.id} onClick={() => handleExport(b)} className="mr-4 font-semibold text-text-primary hover:text-accent disabled:opacity-40">
                       Baixar códigos (CSV)
                     </button>
@@ -227,6 +237,16 @@ export default function AdminTokens() {
           </tbody>
         </table>
       </div>
+
+      <Modal isOpen={Boolean(distributeBatch)} onClose={() => setDistributeBatch(null)} title={`Revendedores — ${distributeBatch?.name || ''}`} maxWidthClass="max-w-2xl">
+        {distributeBatch && (
+          <TokenDistribution
+            batch={distributeBatch}
+            onChanged={load}
+            onDownload={(tokens, resellerName) => downloadTokensCsv(tokens, `${distributeBatch.name} ${resellerName}`)}
+          />
+        )}
+      </Modal>
 
       <Modal isOpen={isModalOpen} onClose={() => !generating && setIsModalOpen(false)} title="Gerar lote de tokens">
         <form onSubmit={handleGenerate} className="flex flex-col gap-4">

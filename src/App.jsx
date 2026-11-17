@@ -4,6 +4,7 @@ import Storefront from './pages/Storefront';
 import StaffLogin from './pages/StaffLogin';
 import MyOrders from './pages/MyOrders';
 import PriceTable from './pages/PriceTable';
+import MyTokens from './pages/MyTokens';
 import StorefrontGuard from './components/layout/StorefrontGuard';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminGuard from './pages/admin/AdminGuard';
@@ -63,6 +64,14 @@ function App() {
         element={
           <StorefrontGuard>
             <MyOrders />
+          </StorefrontGuard>
+        }
+      />
+      <Route
+        path="/meus-codigos"
+        element={
+          <StorefrontGuard>
+            <MyTokens />
           </StorefrontGuard>
         }
       />

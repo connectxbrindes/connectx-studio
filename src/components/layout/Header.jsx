@@ -106,6 +106,15 @@ export default function Header({ channel = 'studio' }) {
                       Meus Pedidos
                     </Link>
                   )}
+                  {identity?.role === 'reseller' && (
+                    <Link
+                      to="/meus-codigos"
+                      className="block px-4 py-2 text-sm text-text-primary hover:bg-bg hover:text-accent"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Meus Códigos
+                    </Link>
+                  )}
                   {identity?.role === 'reseller' && identity?.showPriceTable && (
                     <Link
                       to="/tabela-de-precos"

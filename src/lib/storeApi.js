@@ -218,7 +218,7 @@ export async function fetchBatchTokens(batchId) {
   for (let from = 0; ; from += pageSize) {
     const { data, error } = await supabaseAdmin
       .from('campaign_tokens')
-      .select('code, status, used_at, used_order_number')
+      .select('code, status, used_at, used_order_number, reseller_id, reseller:resellers ( name )')
       .eq('batch_id', batchId)
       .order('created_at', { ascending: true })
       .order('code', { ascending: true })
@@ -235,10 +235,34 @@ export async function findToken(code) {
   if (!normalized) return null;
   const { data } = await supabaseAdmin
     .from('campaign_tokens')
-    .select('id, code, status, used_at, used_order_number, batch:campaign_token_batches ( name, active )')
+    .select('id, code, status, used_at, used_order_number, batch:campaign_token_batches ( name, active ), reseller:resellers ( name )')
     .eq('code', normalized)
     .maybeSingle();
   return data;
+}
+
+const TOKEN_ERRORS = {
+  SEM_PERMISSAO: 'Seu usuário não tem acesso a Tokens.',
+  QUANTIDADE_INVALIDA: 'Informe uma quantidade maior que zero.',
+  REVENDEDOR_INVALIDO: 'Escolha um revendedor da lista.',
+};
+const tokenError = (error, fallback) =>
+  TOKEN_ERRORS[Object.keys(TOKEN_ERRORS).find((k) => error?.message?.includes(k))] || fallback;
+
+/** Vincula os próximos N códigos livres do lote ao revendedor. Devolve quantos foram vinculados. */
+export async function assignTokens(batchId, resellerId, quantity) {
+  const { data, error } = await supabaseAdmin.rpc('assign_campaign_tokens', {
+    p_batch_id: batchId, p_reseller_id: resellerId, p_quantity: quantity,
+  });
+  if (error) return { error: tokenError(error, 'Não foi possível vincular os códigos.') };
+  return { error: null, count: data };
+}
+
+/** Devolve ao lote os códigos ainda não usados do revendedor. */
+export async function releaseTokens(batchId, resellerId) {
+  const { data, error } = await supabaseAdmin.rpc('release_campaign_tokens', { p_batch_id: batchId, p_reseller_id: resellerId });
+  if (error) return { error: tokenError(error, 'Não foi possível remover o vínculo.') };
+  return { error: null, count: data };
 }
 
 export async function setTokenStatus(tokenId, status) {

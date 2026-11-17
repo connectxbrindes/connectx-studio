@@ -747,6 +747,17 @@ export async function fetchOrders() {
 
 /** Pedidos da unidade logada (reseller) — RLS ("orders reseller read own")
  * já restringe pro que ela mesma fez, não precisa filtrar aqui. Sessão do Studio. */
+/** Studio: códigos da campanha vinculados à unidade logada. */
+export async function fetchMyTokens() {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase.rpc('my_campaign_tokens');
+  if (error) {
+    console.error('Error fetching my tokens:', error);
+    return [];
+  }
+  return data || [];
+}
+
 export async function fetchMyOrders() {
   if (!isSupabaseConfigured) return [];
 
