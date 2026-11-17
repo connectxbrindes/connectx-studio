@@ -4,6 +4,7 @@ import {
   fetchTokenBatches,
   generateTokenBatch,
   setTokenBatchActive,
+  renameTokenBatch,
   fetchBatchTokens,
   findToken,
   setTokenStatus,
@@ -49,6 +50,7 @@ export default function AdminTokens() {
   const [generating, setGenerating] = useState(false);
   const [busyBatchId, setBusyBatchId] = useState(null);
   const [distributeBatch, setDistributeBatch] = useState(null);
+  const [editing, setEditing] = useState(null); // { id, name } do lote sendo renomeado
 
   const [search, setSearch] = useState('');
   const [searchResult, setSearchResult] = useState(undefined); // undefined = não buscou; null = não achou
@@ -100,6 +102,23 @@ export default function AdminTokens() {
     setBusyBatchId(batch.id);
     await setTokenBatchActive(batch.id, !batch.active);
     setBusyBatchId(null);
+    load();
+  };
+
+  const handleRename = async (e) => {
+    e.preventDefault();
+    const name = editing.name.trim();
+    if (!name) return;
+    const batch = batches.find((x) => x.id === editing.id);
+    if (name === batch?.name) return setEditing(null);
+    setBusyBatchId(editing.id);
+    const { error } = await renameTokenBatch(editing.id, name);
+    setBusyBatchId(null);
+    if (error) {
+      window.alert('Não foi possível renomear a campanha.');
+      return;
+    }
+    setEditing(null);
     load();
   };
 
@@ -206,7 +225,36 @@ export default function AdminTokens() {
               batches.map((b) => (
                 <tr key={b.id}>
                   <td className="px-4 py-3">
-                    <p className="font-semibold">{b.name}</p>
+                    {editing?.id === b.id ? (
+                      <form onSubmit={handleRename} className="flex items-center gap-2">
+                        <input
+                          autoFocus
+                          value={editing.name}
+                          maxLength={80}
+                          onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                          onKeyDown={(e) => e.key === 'Escape' && setEditing(null)}
+                          className="min-w-[180px] rounded-lg border border-border px-2 py-1 font-semibold outline-none focus:border-text-primary"
+                        />
+                        <button type="submit" disabled={busyBatchId === b.id || !editing.name.trim()} className="text-xs font-semibold text-accent hover:underline disabled:opacity-40">
+                          Salvar
+                        </button>
+                        <button type="button" onClick={() => setEditing(null)} className="text-xs font-semibold text-text-secondary hover:underline">
+                          Cancelar
+                        </button>
+                      </form>
+                    ) : (
+                      <p className="flex items-center gap-2 font-semibold">
+                        {b.name}
+                        <button
+                          type="button"
+                          onClick={() => setEditing({ id: b.id, name: b.name })}
+                          title="Editar título da campanha"
+                          className="text-xs font-semibold text-text-secondary hover:text-accent"
+                        >
+                          Editar
+                        </button>
+                      </p>
+                    )}
                     <p className="text-xs text-text-secondary">
                       {formatDateTime(b.created_at)} · formato {sampleCode(b.prefix, b.code_length)}
                     </p>

@@ -211,6 +211,11 @@ export async function setTokenBatchActive(batchId, active) {
   return { error };
 }
 
+export async function renameTokenBatch(batchId, name) {
+  const { error } = await supabaseAdmin.from('campaign_token_batches').update({ name }).eq('id', batchId);
+  return { error };
+}
+
 /** Todos os tokens de um lote (paginado — o PostgREST limita 1000 por chamada). */
 export async function fetchBatchTokens(batchId) {
   const pageSize = 1000;
